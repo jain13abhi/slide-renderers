@@ -18,10 +18,19 @@ https://raw.githubusercontent.com/jain13abhi/slide-renderers/main/dockfinity/ren
 ```
 
 A private repository answers those URLs with 404, and the tasks are written to
-produce nothing rather than guess at a layout. **Making this repository
-private stops both brands from posting.** The `raw-url-reachable` workflow
-checks both URLs on every push and once a day before either run, so the repo
-going private surfaces as a failed run rather than as a silent empty morning.
+produce nothing rather than guess at a layout. **Making this repository private
+stops both brands from posting.** That is how it was found: the Metal Dock
+renderer originally lived in a private repository, and the task would have gone
+silent from the following morning.
+
+There is no automated guard on this, because the failure is already loud — a
+run that cannot fetch its layout says so and produces nothing, rather than
+drawing something that drifts. To check by hand:
+
+```
+curl -s -o /dev/null -w '%{http_code}
+'   https://raw.githubusercontent.com/jain13abhi/slide-renderers/main/metaldock/render-slides.py
+```
 
 The website repositories stay private. Only the layout has to be readable.
 
