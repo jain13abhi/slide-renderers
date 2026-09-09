@@ -28,8 +28,7 @@ run that cannot fetch its layout says so and produces nothing, rather than
 drawing something that drifts. To check by hand:
 
 ```
-curl -s -o /dev/null -w '%{http_code}
-'   https://raw.githubusercontent.com/jain13abhi/slide-renderers/main/metaldock/render-slides.py
+curl -sI https://raw.githubusercontent.com/jain13abhi/slide-renderers/main/metaldock/render-slides.py | head -1
 ```
 
 The website repositories stay private. Only the layout has to be readable.
