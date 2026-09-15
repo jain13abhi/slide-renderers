@@ -97,15 +97,60 @@ ITEM_TEXT_GAP = 8
 PANEL_PAD_X = 26
 PANEL_PAD_Y = 24
 MIN_PANEL_CLEARANCE = 12.0
-BG = (3, 7, 17)
-PANEL = (17, 26, 43)
-CARD = (12, 19, 32)
-CARD_ALT = (14, 22, 37)
-TEXT = (248, 250, 252)
-MUTED = (148, 163, 184)
-FAINT = (100, 116, 139)
-ACCENT = (245, 158, 11)
-DIVIDER = (45, 57, 76)
+# Colour is the only thing a theme changes. Geometry, type and spacing stay
+# identical across themes, so the clearance and distribution checks hold
+# whichever palette is in use.
+#
+# The light palette is the website's own token set, read from globals.css.
+# One value is deliberately not the site's: the brand amber, hsl(38 92% 50%),
+# scores 2.13:1 on white and cannot carry the accent phrase. It is darkened to
+# hsl(38 92% 31%) - the same hue and saturation, weighted for a light ground -
+# which reaches 5.14:1 on the page and 4.92:1 on a card. The site's own hero
+# does the same thing.
+PALETTES = {
+    "light": {
+        "BG": (255, 255, 255),
+        "PANEL": (243, 244, 246),
+        "CARD": (249, 250, 251),
+        "CARD_ALT": (243, 244, 246),
+        "TEXT": (3, 7, 17),
+        "MUTED": (97, 104, 117),
+        "FAINT": (107, 114, 128),
+        "ACCENT": (152, 98, 6),
+        "DIVIDER": (220, 223, 228),
+    },
+    "dark": {
+        "BG": (3, 7, 17),
+        "PANEL": (17, 26, 43),
+        "CARD": (12, 19, 32),
+        "CARD_ALT": (14, 22, 37),
+        "TEXT": (248, 250, 252),
+        "MUTED": (148, 163, 184),
+        "FAINT": (100, 116, 139),
+        "ACCENT": (245, 158, 11),
+        "DIVIDER": (45, 57, 76),
+    },
+}
+
+DEFAULT_THEME = "light"
+
+BG = PANEL = CARD = CARD_ALT = TEXT = MUTED = FAINT = ACCENT = DIVIDER = None
+
+
+def apply_theme(name):
+    """Bind the colour names to a palette. Called before anything is drawn."""
+    global BG, PANEL, CARD, CARD_ALT, TEXT, MUTED, FAINT, ACCENT, DIVIDER
+    palette = PALETTES.get(name)
+    if palette is None:
+        raise RenderError(
+            f"Unknown theme {name!r}. Known themes: " + ", ".join(sorted(PALETTES))
+        )
+    BG, PANEL, CARD = palette["BG"], palette["PANEL"], palette["CARD"]
+    CARD_ALT, TEXT, MUTED = palette["CARD_ALT"], palette["TEXT"], palette["MUTED"]
+    FAINT, ACCENT, DIVIDER = palette["FAINT"], palette["ACCENT"], palette["DIVIDER"]
+
+
+apply_theme(DEFAULT_THEME)
 FONT_SIZE = {"eyebrow":14,"date":15,"thesis":54,"carousel_title":38,"item_name":24,"item_number":15,"item_meta":15,"panel_label":13,"read_through":24,"carousel_thesis":38,"index_item":20,"footer_label":11,"footer":12,"page":11}
 TRACKING = {"eyebrow":1.8,"date":0.6,"thesis":-0.8,"carousel_title":-0.4,"item_name":-0.25,"panel_label":1.5,"footer_label":1.25}
 FONT_CANDIDATES = {"display_bold":["InterDisplay-Bold.otf","InterDisplay-Bold.ttf"],"display_semibold":["InterDisplay-SemiBold.otf","InterDisplay-SemiBold.ttf"],"regular":["Inter-Regular.otf","Inter-Regular.ttf"],"semibold":["Inter-SemiBold.otf","Inter-SemiBold.ttf"]}
@@ -331,7 +376,7 @@ def render_single(brief,logo):
 def save_outputs(brief,images,outdir):
     outdir.mkdir(parents=True,exist_ok=True); p=outdir/f"dockfinity-discovery-{brief['date']}.png"; images[0].save(p,format='PNG',optimize=True); return [p]
 def main():
-    p=argparse.ArgumentParser(); p.add_argument('--logo',required=True,type=Path); p.add_argument('--out-dir',type=Path,default=Path('.')); a=p.parse_args(); validate_brief(BRIEF)
+    p=argparse.ArgumentParser(); p.add_argument('--logo',required=True,type=Path); p.add_argument('--out-dir',type=Path,default=Path('.')); a=p.parse_args(); apply_theme(str(BRIEF.get('theme', DEFAULT_THEME))); validate_brief(BRIEF)
     for role in ('display_bold','display_semibold','regular','semibold'): print(f'Font {role}: {font_path(role)}')
     logo=load_logo(a.logo); images=[render_single(BRIEF,logo)]; paths=save_outputs(BRIEF,images,a.out_dir)
     for path in paths: print(f'Saved: {path.resolve()}')
