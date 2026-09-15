@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from PIL import Image, ImageChops, ImageDraw, ImageFont
 from pathlib import Path
+import glob
 import json
 import math
 import os
@@ -212,10 +213,16 @@ MIN_CARD_CLEARANCE = 12
 MIN_PAGE_CLEARANCE = 8
 MIN_TITLE_HERO_CLEARANCE = 12
 
+# Where the brand assets are and where the slides go. The default is the
+# scheduled task's sandbox, which is why it is a path and not a flag; CI sets
+# these instead of the script being told about CI.
+ASSET_DIR = Path(os.environ.get("MD_ASSET_DIR", "/mnt/data"))
+OUT_ROOT = Path(os.environ.get("MD_OUT_DIR", "/mnt/data"))
+
 ASSETS = {
-    "metal_logo": Path("/mnt/data/Metal_Dock_Black_Logo.png"),
-    "dockfinity_logo": Path("/mnt/data/dockfinity logo.png"),
-    "hero": Path("/mnt/data/MD Hero.png"),
+    "metal_logo": ASSET_DIR / "Metal_Dock_Black_Logo.png",
+    "dockfinity_logo": ASSET_DIR / "dockfinity logo.png",
+    "hero": ASSET_DIR / "MD Hero.png",
 }
 
 EXPECTED_ASSET_DIMENSIONS = {
@@ -259,53 +266,74 @@ FONT_ROOTS = (
     Path.home() / ".local/share/fonts",
 )
 
+# The typefaces metaldock.co.in loads: Outfit for display, IBM Plex Sans for
+# body. Both ship as a single variable file, so a role is a file plus the
+# named weight instance to select inside it.
 FONT_NAMES = {
-    "body_regular": "Inter-Regular",
-    "body_medium": "Inter-Medium",
-    "body_semibold": "Inter-SemiBold",
-    "body_bold": "Inter-Bold",
-    "display_regular": "InterDisplay-Regular",
-    "display_semibold": "InterDisplay-SemiBold",
-    "display_bold": "InterDisplay-Bold",
-    "display_black": "InterDisplay-Black",
+    "body_regular": ("IBMPlexSans", "Regular"),
+    "body_medium": ("IBMPlexSans", "Medium"),
+    "body_semibold": ("IBMPlexSans", "SemiBold"),
+    "body_bold": ("IBMPlexSans", "Bold"),
+    "display_regular": ("Outfit", "Regular"),
+    "display_semibold": ("Outfit", "SemiBold"),
+    "display_bold": ("Outfit", "Bold"),
+    "display_black": ("Outfit", "Black"),
+}
+
+# A variable font is published under a name carrying its axes, and some
+# installs flatten that to the plain family name. Both are tried.
+FONT_FILES = {
+    "Outfit": ("Outfit[wght].ttf", "Outfit.ttf"),
+    "IBMPlexSans": ("IBMPlexSans[wdth,wght].ttf", "IBMPlexSans.ttf"),
 }
 
 
-def find_font_file(stem: str) -> Path:
+def find_font_file(family: str) -> Path:
     searched = []
 
-    for extension in (".otf", ".ttf"):
-        target = stem + extension
+    for filename in FONT_FILES[family]:
+        # Checked as a plain path before any globbing. A variable font's
+        # filename carries its axes in square brackets — IBMPlexSans[wdth,wght]
+        # — and to a glob those brackets are a character class matching one
+        # letter, so the file is there and the pattern never finds it.
+        for root in FONT_ROOTS:
+            direct = root / filename
+            searched.append(str(direct))
+            if direct.is_file():
+                return direct
 
         for root in FONT_ROOTS:
-            searched.append(str(root / "**" / target))
-
             if not root.exists():
                 continue
-
-            matches = sorted(root.rglob(target))
+            matches = sorted(root.rglob(glob.escape(filename)))
             if matches:
                 return matches[0]
 
     raise FileNotFoundError(
-        "Required font could not be found.\n"
-        f"Font stem: {stem}\n"
-        "Searched, in OTF-first order:\n  - "
+        "Required font could not be found."
+        + f"\nFamily: {family}"
+        + "\nSearched:\n  - "
         + "\n  - ".join(searched)
     )
 
 
 FONT_PATHS = {
-    key: find_font_file(stem)
-    for key, stem in FONT_NAMES.items()
+    key: find_font_file(family)
+    for key, (family, _weight) in FONT_NAMES.items()
 }
 
 
 def font(size: int, role: str = "body_regular") -> ImageFont.FreeTypeFont:
-    if role not in FONT_PATHS:
+    if role not in FONT_NAMES:
         raise KeyError(f"Unknown font role: {role}")
 
-    return ImageFont.truetype(str(FONT_PATHS[role]), size)
+    _family, weight = FONT_NAMES[role]
+    loaded = ImageFont.truetype(str(FONT_PATHS[role]), size)
+    # A variable font opens at Regular. Without this every bold line would
+    # render at normal weight, which looks like a design choice rather than
+    # a bug and would go unnoticed.
+    loaded.set_variation_by_name(weight)
+    return loaded
 
 
 # ============================================================================
@@ -2584,9 +2612,7 @@ def assert_png_safe_area(
 # ============================================================================
 
 def output_directory() -> Path:
-    return Path(
-        "/mnt/data"
-    ) / (
+    return OUT_ROOT / (
         "metal_dock_"
         + BRIEF["brief_date_iso"].replace(
             "-",
@@ -2824,10 +2850,18 @@ def render():
         output_dir,
     )
 
-    pptx_path = write_pptx(
-        slide_paths,
-        output_dir,
-    )
+    # The deck is a convenience for whoever posts by hand; the slides and the
+    # ZIP are the deliverable. It needs node and pptxgenjs, which the website's
+    # build runner has no reason to carry, so a failure here must not throw
+    # away five slides that already rendered and passed every check.
+    try:
+        pptx_path = write_pptx(
+            slide_paths,
+            output_dir,
+        )
+    except Exception as exc:  # noqa: BLE001 - reported, never silent
+        pptx_path = None
+        print(f"PPTX not written ({exc}). The slides and the ZIP are unaffected.")
 
     manifest = {
         "brief_date": BRIEF["brief_date_iso"],
@@ -2856,9 +2890,7 @@ def render():
             "zip": str(
                 zip_path
             ),
-            "pptx": str(
-                pptx_path
-            ),
+            "pptx": str(pptx_path) if pptx_path else None,
         },
     }
 
