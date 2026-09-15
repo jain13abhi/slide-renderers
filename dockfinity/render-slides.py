@@ -153,7 +153,15 @@ def apply_theme(name):
 apply_theme(DEFAULT_THEME)
 FONT_SIZE = {"eyebrow":14,"date":15,"thesis":54,"carousel_title":38,"item_name":24,"item_number":15,"item_meta":15,"panel_label":13,"read_through":24,"carousel_thesis":38,"index_item":20,"footer_label":11,"footer":12,"page":11}
 TRACKING = {"eyebrow":1.8,"date":0.6,"thesis":-0.8,"carousel_title":-0.4,"item_name":-0.25,"panel_label":1.5,"footer_label":1.25}
-FONT_CANDIDATES = {"display_bold":["InterDisplay-Bold.otf","InterDisplay-Bold.ttf"],"display_semibold":["InterDisplay-SemiBold.otf","InterDisplay-SemiBold.ttf"],"regular":["Inter-Regular.otf","Inter-Regular.ttf"],"semibold":["Inter-SemiBold.otf","Inter-SemiBold.ttf"]}
+# The typefaces the website uses: Syne for display, Inter for body.
+# Syne ships as a single variable file, so the weight is a named instance
+# rather than a separate file.
+FONT_CANDIDATES = {
+    "display_bold": (["Syne[wght].ttf", "Syne.ttf"], "Bold"),
+    "display_semibold": (["Syne[wght].ttf", "Syne.ttf"], "SemiBold"),
+    "regular": (["Inter-Regular.otf", "Inter-Regular.ttf"], None),
+    "semibold": (["Inter-SemiBold.otf", "Inter-SemiBold.ttf"], None),
+}
 class RenderError(RuntimeError): pass
 
 def font_search_roots():
@@ -171,7 +179,7 @@ def font_search_roots():
 
 def find_font_file(role):
     roots=font_search_roots()
-    for filename in FONT_CANDIDATES[role]:
+    for filename in FONT_CANDIDATES[role][0]:
         for root in roots:
             direct=root/filename
             if direct.is_file(): return direct
@@ -181,11 +189,23 @@ def find_font_file(role):
                 for match in root.rglob(filename):
                     if match.is_file(): return match
             except (OSError,PermissionError): continue
-    raise RenderError(f"Required Inter font for role '{role}' was not found.")
+    wanted = " or ".join(FONT_CANDIDATES[role][0])
+    raise RenderError(
+        f"No font file for role '{role}'. Looked for {wanted} under "
+        + ", ".join(str(r) for r in roots[:4])
+        + ", and elsewhere."
+    )
 @lru_cache(None)
 def font_path(role): return str(find_font_file(role))
 @lru_cache(None)
-def get_font(role,size): return ImageFont.truetype(font_path(role),size=size)
+def get_font(role, size):
+    font = ImageFont.truetype(font_path(role), size=size)
+    variation = FONT_CANDIDATES[role][1]
+    if variation:
+        # A variable font opens at Regular; the weight has to be selected, or
+        # every display line renders lighter than the site's.
+        font.set_variation_by_name(variation)
+    return font
 
 def advance(font,text):
     if not text: return 0.0
