@@ -1,0 +1,185 @@
+name: Render occasion posts
+
+# Paste the occasion JSON into an issue titled "occasion: <slug>".
+# This validates it, fetches the backgrounds named in it, renders one post
+# per brand, commits them, and answers on the issue with the links and the
+# captions. A spec that does not validate is reported and nothing lands.
+#
+# Everything runs in one job on purpose: a commit made with GITHUB_TOKEN does
+# not trigger another workflow, so a separate render job would never fire.
+
+on:
+  issues:
+    types: [opened, edited]
+
+permissions:
+  contents: write
+  issues: write
+
+env:
+  # Pinned to the releases the two posts of 16 Sep 2026 were verified
+  # against. A different release changes the metrics, which changes where the
+  # text wraps, which changes the layout.
+  INTER_VERSION: "4.1"
+  SYNE_COMMIT: "54fb97bd69162b95b2aa2c3996ffd71466c1aec2"
+  OUTFIT_COMMIT: "5f246070882b903ed95a911dba83d9d4a6836152"
+  PLEX_COMMIT: "8409f033cd7dee08914990602f0df5f5e70e0c14"
+  PILLOW_VERSION: "12.1.1"
+
+jobs:
+  render:
+    if: startsWith(github.event.issue.title, 'occasion:')
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install Pillow
+        run: pip install "Pillow==${PILLOW_VERSION}"
+
+      - name: Install the brands' typefaces
+        run: |
+          mkdir -p ~/.fonts
+          curl -fsSL -o inter.zip \
+            "https://github.com/rsms/inter/releases/download/v${INTER_VERSION}/Inter-${INTER_VERSION}.zip"
+          unzip -j -o inter.zip 'extras/otf/*.otf' -d ~/.fonts
+          curl -fsSL -o "$HOME/.fonts/Syne[wght].ttf" \
+            "https://raw.githubusercontent.com/google/fonts/${SYNE_COMMIT}/ofl/syne/Syne%5Bwght%5D.ttf"
+          curl -fsSL -o "$HOME/.fonts/Outfit[wght].ttf" \
+            "https://raw.githubusercontent.com/google/fonts/${OUTFIT_COMMIT}/ofl/outfit/Outfit%5Bwght%5D.ttf"
+          curl -fsSL -o "$HOME/.fonts/IBMPlexSans[wdth,wght].ttf" \
+            "https://raw.githubusercontent.com/google/fonts/${PLEX_COMMIT}/ofl/ibmplexsans/IBMPlexSans%5Bwdth,wght%5D.ttf"
+          ls ~/.fonts | wc -l
+
+      - name: Read the spec
+        id: spec
+        env:
+          BODY: ${{ github.event.issue.body }}
+        run: |
+          set -o pipefail
+          printf '%s' "$BODY" > raw.txt
+          # The body may arrive fenced. Take what is between the first { and
+          # the last }, so a fence or a covering note does not break the parse.
+          python - <<'PY' 2>>error.txt
+          import json, pathlib
+          raw = pathlib.Path("raw.txt").read_text(encoding="utf-8")
+          start, end = raw.find("{"), raw.rfind("}")
+          if start < 0 or end < 0:
+              raise SystemExit("No JSON object found in the issue body.")
+          spec = json.loads(raw[start:end + 1])
+          pathlib.Path("post.json").write_text(
+              json.dumps(spec, indent=2, ensure_ascii=False), encoding="utf-8")
+          PY
+          python - <<'PY' >> "$GITHUB_OUTPUT"
+          import json, pathlib
+          spec = json.loads(pathlib.Path("post.json").read_text(encoding="utf-8"))
+          print("slug=" + spec["slug"])
+          print("brands=" + " ".join(spec["brands"]))
+          PY
+
+      - name: Fetch the backgrounds
+        id: backgrounds
+        run: |
+          set -o pipefail
+          mkdir -p bg
+          python - <<'PY' > fetch.sh 2>>error.txt
+          import json, pathlib, shlex
+          spec = json.loads(pathlib.Path("post.json").read_text(encoding="utf-8"))
+          for brand, block in spec["brands"].items():
+              url = block.get("background")
+              if not url:
+                  raise SystemExit(f"brands.{brand}.background is missing - "
+                                   f"there is no image to set the words on.")
+              print(f"curl -fsSL --max-time 120 -o bg/{brand}.png {shlex.quote(url)}")
+          PY
+          bash fetch.sh
+          # Cropped to the frame now, and committed at that size. The generated
+          # original is 8-10MB and its URL expires; this keeps the post
+          # reproducible next year without carrying the weight in git.
+          python - <<'PY' 2>>error.txt
+          import importlib.util, pathlib
+          s = importlib.util.spec_from_file_location("r", "occasion/render-posts.py")
+          r = importlib.util.module_from_spec(s); s.loader.exec_module(r)
+          for path in sorted(pathlib.Path("bg").glob("*.png")):
+              r.cover(path).save(path)
+              print(f"{path}: cropped to 1080x1350")
+          PY
+
+      - name: Render
+        run: |
+          set -o pipefail
+          args=""
+          [ -f bg/metaldock.png ]  && args="$args --md-background bg/metaldock.png"
+          [ -f bg/dockfinity.png ] && args="$args --df-background bg/dockfinity.png"
+          python occasion/render-posts.py post.json \
+            --assets . --out occasion/posts $args 2>>error.txt | tee render.txt
+
+      - name: Commit
+        id: commit
+        env:
+          SLUG: ${{ steps.spec.outputs.slug }}
+        run: |
+          mkdir -p "occasion/specs" "occasion/backgrounds/$SLUG"
+          cp post.json "occasion/specs/$SLUG.json"
+          cp bg/*.png "occasion/backgrounds/$SLUG/"
+
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add occasion/posts occasion/specs occasion/backgrounds
+          if git diff --cached --quiet; then
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+          else
+            git commit -m "occasion: $SLUG"
+            git push
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Answer on the issue
+        if: always()
+        env:
+          GH_TOKEN: ${{ github.token }}
+          SLUG: ${{ steps.spec.outputs.slug }}
+          ISSUE: ${{ github.event.issue.number }}
+          OUTCOME: ${{ job.status }}
+        run: |
+          {
+            if [ "$OUTCOME" = "success" ]; then
+              echo "Rendered \`$SLUG\`."
+              echo
+              base="https://raw.githubusercontent.com/${GITHUB_REPOSITORY}/main/occasion/posts"
+              for f in occasion/posts/*-"$SLUG".png; do
+                [ -e "$f" ] || continue
+                echo "- $base/$(basename "$f")"
+              done
+              echo
+              echo '```'
+              cat render.txt 2>/dev/null
+              echo '```'
+              python - <<'PY'
+          import json, pathlib
+          spec = json.loads(pathlib.Path("post.json").read_text(encoding="utf-8"))
+          for brand, block in spec["brands"].items():
+              caption = block.get("caption")
+              if not caption:
+                  continue
+              lines = caption.split("\n")
+              print(f"\n**{brand} caption** - {len(lines)} lines, {len(caption)} characters")
+              if len(lines) > 10 or len(caption) > 700:
+                  print("\n> Over the WhatsApp status limit of 10 lines / 700 characters.")
+              print("\n```\n" + caption + "\n```")
+          PY
+            else
+              echo "**Did not render.**"
+              echo
+              echo '```'
+              tail -c 3000 error.txt 2>/dev/null || echo "(no error output captured)"
+              echo '```'
+              echo
+              echo "Nothing was committed. Edit this issue with a corrected spec and it will run again."
+            fi
+          } > comment.md
+          gh issue comment "$ISSUE" --body-file comment.md

@@ -1,0 +1,146 @@
+{
+  "_read_me": [
+    "The roster of occasions worth a post. Edited by hand; read by the weekly",
+    "scheduled task. Adding an occasion here is all it takes for the task to",
+    "start watching for it.",
+    "",
+    "DATES. Most of these are lunar and move every year, so this file does not",
+    "pretend to be a calendar. 'fixed' entries carry a month-day that never",
+    "changes. 'lunar' entries carry only the month they fall in, plus a 'hint'",
+    "for the years someone has already looked up. The task resolves the real",
+    "date from a live source every single week and must cite where it got it.",
+    "If the resolved date and the hint disagree, the task stops and says so",
+    "rather than posting on the wrong day - a festival greeting a day late is",
+    "the one mistake everyone notices.",
+    "",
+    "BRANDS. An occasion is not automatically both firms'. Vishwakarma Puja is",
+    "a workshop's day; Metal Dock marks it and Dockfinity has no business",
+    "doing so. List only the brands that should actually post.",
+    "",
+    "ANGLE. The one thing this firm can say about this day that a greeting-card",
+    "company cannot. It is the whole reason for posting. If the angle reads",
+    "like it could sit under any logo, the post is not worth making."
+  ],
+
+  "lead_days": 10,
+
+  "occasions": [
+    {
+      "id": "vishwakarma-puja",
+      "name": "Vishwakarma Puja",
+      "kind": "lunar",
+      "month": "09",
+      "hint": { "2026": "2026-09-17" },
+      "brands": ["metaldock"],
+      "about": "Kanya Sankranti. The day the tools, machines and the workshop itself are cleaned, garlanded and rested. Observed by hand across industrial Delhi, Wazirpur included.",
+      "angle": "The only festival in the year that is about the machines. A steel supplier that runs a shop floor can say something here that a brand posting a stock diya cannot."
+    },
+    {
+      "id": "dussehra",
+      "name": "Dussehra / Vijayadashami",
+      "kind": "lunar",
+      "month": "10",
+      "hint": { "2026": "2026-10-20" },
+      "brands": ["metaldock", "dockfinity"],
+      "about": "The tenth day, after the nine of Navratri. Traditionally the day new work and new ledgers begin.",
+      "angle": "Shastra puja - the day the instruments of one's trade are honoured. For one firm that is steel and machines, for the other it is what it builds."
+    },
+    {
+      "id": "dhanteras",
+      "name": "Dhanteras",
+      "kind": "lunar",
+      "month": "11",
+      "hint": { "2026": "2026-11-06" },
+      "brands": ["metaldock"],
+      "about": "The first day of the Diwali five. The day metal is bought - traditionally a vessel, which is why it is the single biggest utensil-buying day of the Indian year.",
+      "angle": "This is the trade's own festival and the one day the whole country does what Paatra sells the rest of the year. Say something true about why the custom is metal, not why to buy ours."
+    },
+    {
+      "id": "diwali",
+      "name": "Diwali / Lakshmi Puja",
+      "kind": "lunar",
+      "month": "11",
+      "hint": { "2026": "2026-11-08" },
+      "brands": ["metaldock", "dockfinity"],
+      "about": "The main day of the five.",
+      "angle": "Everyone posts on Diwali, which is exactly why a generic one is invisible. Take the year that is ending in this house or this shop, not the lamps."
+    },
+    {
+      "id": "bhai-dooj",
+      "name": "Bhai Dooj",
+      "kind": "lunar",
+      "month": "11",
+      "hint": { "2026": "2026-11-10" },
+      "brands": [],
+      "about": "The last of the five.",
+      "angle": "Listed so the task does not treat it as missing. No brand posts unless someone adds one - a family day does not need a supplier's greeting."
+    },
+    {
+      "id": "makar-sankranti",
+      "name": "Makar Sankranti",
+      "kind": "fixed",
+      "date": "01-14",
+      "brands": ["metaldock"],
+      "about": "The solar turn. One of the few Indian festivals on a fixed date, because it follows the sun rather than the moon.",
+      "angle": "The year's first turn, and the start of the buying season that runs to the wedding months."
+    },
+    {
+      "id": "republic-day",
+      "name": "Republic Day",
+      "kind": "fixed",
+      "date": "01-26",
+      "brands": ["metaldock", "dockfinity"],
+      "about": "The constitution came into force, 1950.",
+      "angle": "A manufacturing floor and a software company are both downstream of what a republic guarantees. Say that plainly or do not post - the flag alone is filler."
+    },
+    {
+      "id": "holi",
+      "name": "Holi",
+      "kind": "lunar",
+      "month": "03",
+      "hint": {},
+      "brands": ["metaldock", "dockfinity"],
+      "about": "Phalguna full moon.",
+      "angle": "The shop shuts. Say something about the pause, not the colours."
+    },
+    {
+      "id": "mahavir-jayanti",
+      "name": "Mahavir Jayanti",
+      "kind": "lunar",
+      "month": "04",
+      "hint": {},
+      "brands": ["metaldock", "dockfinity"],
+      "about": "The birth of Mahavira, the twenty-fourth tirthankara.",
+      "angle": "Ahimsa and aparigraha read differently from inside a trading business than from outside one. That tension is the post."
+    },
+    {
+      "id": "akshaya-tritiya",
+      "name": "Akshaya Tritiya",
+      "kind": "lunar",
+      "month": "04",
+      "hint": {},
+      "brands": ["metaldock"],
+      "about": "Considered an auspicious day to buy metal; second only to Dhanteras for the trade.",
+      "angle": "Same caution as Dhanteras. Explain the custom, do not run an offer."
+    },
+    {
+      "id": "independence-day",
+      "name": "Independence Day",
+      "kind": "fixed",
+      "date": "08-15",
+      "brands": ["metaldock", "dockfinity"],
+      "about": "1947.",
+      "angle": "Only worth posting with something specific - what this firm makes here, and where the steel or the software actually comes from."
+    },
+    {
+      "id": "paryushan-kshamavani",
+      "name": "Kshamavani / Micchami Dukkadam",
+      "kind": "lunar",
+      "month": "09",
+      "hint": { "2026": "2026-09-16" },
+      "brands": ["metaldock", "dockfinity"],
+      "about": "Uttam Kshama, the first of the Das Lakshana, and the asking of forgiveness that closes Paryushan. Digambar and Svetambar observe it on different days - check which.",
+      "angle": "Done in 2026: the Prakrit glossed word by word, because almost nobody prints what miccha and dukkada actually mean. Keep the discipline, change the copy."
+    }
+  ]
+}
