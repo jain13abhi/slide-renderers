@@ -318,10 +318,19 @@ one headline for both the page and the slide cover - there is not a separate
 one for each.
 
 6.7 SLIDE COPY RULES THE RENDERER DOES NOT ENFORCE
-One accent phrase per data slide at most, three to five words, on its own line,
-never breaking a sentence. Slide 1 carries none. Nothing decorative is added to
-fill space. The tagline is exactly STAINLESS STEEL SUPPLY and the three
-rejected taglines never appear.
+EVERY entry in the "slides" array carries exactly one "accent", three to five
+words, and the website rejects a slide without one. There is no exception for
+the first entry.
+
+The cover is not in that array. It is built from "title" and "coverThesis" and
+has no accent of its own, which is why older wording said "slide 1 has none" -
+that meant the cover, counted as page 1 by the renderer, not slides[0]. On
+17 September 2026 that sentence was read the other way and the brief was
+rejected for a missing slides[0].accent.
+
+An accent sits on its own line and never breaks a sentence. Nothing decorative
+is added to fill space. The tagline is exactly STAINLESS STEEL SUPPLY and the
+three rejected taglines never appear.
 
 6.8 SOMETHING MISSED IS CARRIED, ONCE
 If something significant from the last 7 days was not carried in an earlier run
@@ -525,8 +534,10 @@ been allowed to block the filing.
   11. Exactly one benchmark carries isKeySignal true.
   12. Every benchmark with metricType 'inventory' carries direction 'neutral'.
       Print that confirmation as part of the schema-enum line.
-  13. No data slide carries more than one accent phrase; where one is present it
-      is three to five words and does not break a sentence. Slide 1 has none.
+  13. Every entry in "slides" carries exactly one "accent" of three to five
+      words that does not break a sentence. Count them against the number of
+      slides and print both: 'accents: N of N slides'. The cover is not in the
+      array and is not counted.
   14. The X caption is under 280 characters WITH its hashtags counted, and
       carries no URL and no bare domain. Print the count.
   15. The disclaimer is character for character the wording in 6.5.
