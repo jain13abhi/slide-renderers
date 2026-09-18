@@ -66,6 +66,8 @@ Trusted sources, by name:
 Page patterns that are known to work:
   SMM articles:  https://news.metal.com/newscontent/{numeric-id}-{slug}
   SMM LME page:  https://www-old.metal.com/nickel/LME_NI_3M
+  LME nickel history, dated and public:
+                 https://www.westmetall.com/en/markdaten.php?action=table&field=LME_Ni_cash
   DGTR:          the individual case page, never dgtr.gov.in
 Do not treat www-old.metal.com/Nickel/ as evidence. It is a category board, not
 a page carrying a specific fact.
@@ -78,6 +80,40 @@ Known source behaviour, so you do not waste the run rediscovering it:
   BigMint's public pages show categories, series names and row dates, but the
   grade-level numeric matrix is usually gated. That is a genuine specialist
   paywall and may be declared publicly.
+
+  THE NICKEL FIGURE COMES FROM WESTMETALL, NOT FROM SMM. This is the one place
+  the specification overrides "use SMM", and it is worth reading twice, because
+  getting it wrong has now cost four consecutive briefs.
+
+  The SMM LME_NI_3M page shows exactly two numbers: the live quote and the
+  previous close. Its dated history table is behind a login and every row reads
+  "login to view". So the page can tell you today's number and yesterday's, and
+  nothing before that - which is precisely what a change figure needs. Between
+  15 and 18 September 2026 the nickel line was wrong every single day: once from
+  a news article that mentioned nickel in passing, and three times from a prior
+  close that could not actually be read anywhere.
+
+  Westmetall publishes the LME official cash settlement and the official
+  3-month closing price for every trading day, dated, free, in a plain table:
+
+    https://www.westmetall.com/en/markdaten.php?action=table&field=LME_Ni_cash
+
+  Read the column headed "LME Nickel 3-month". Take the row for the session the
+  brief is reporting - the brief dated D reports the last completed session
+  before D - and compute the change against the row immediately below it, which
+  is the previous trading day. Both numbers come off the same table, so the
+  change is arithmetic, not a second lookup.
+
+  Attribute it to Westmetall, citing that URL, and say it is the LME official
+  3-month closing price. Do not attribute it to SMM and do not quote SMM's
+  figure for it: SMM's quote is an intraday LMEselect snapshot taken in Asian
+  hours and runs some tens of dollars away from the official close. They are two
+  different series and mixing them across days produces a change that is real in
+  neither.
+
+  SMM remains the source for everything else on the nickel side - NPI, ore,
+  Indonesian HMA, Chinese stainless - and for the commentary. It is only the
+  NI-3M benchmark figure that moves to Westmetall.
 
 Do not mark anything unverified without actually trying the trusted sources
 first. "Not found" is a conclusion you reach after looking, never a default.
