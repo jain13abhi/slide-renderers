@@ -1,0 +1,71 @@
+name: The spec mirrors still match
+
+# Each brief's specification is served from its own site and mirrored here.
+# The second copy exists because a ChatGPT sandbox intermittently fails to
+# resolve a host - it happened to Metal Dock on 17 September 2026 and to
+# Dockfinity on 19 September, on two different accounts and three different
+# hosts. A task that cannot read its rules produces nothing that day, so it
+# is given two addresses and told to try both.
+#
+# Two copies drift. A task reading a stale mirror is worse than a task that
+# failed loudly, because it looks finished. This checks them daily and goes
+# red the moment they differ.
+
+on:
+  push:
+    paths:
+      - "metaldock/brief-spec.md"
+      - "dockfinity/brief-spec.md"
+      - ".github/workflows/spec-mirrors.yml"
+  schedule:
+    # Before either brief runs, so a drift is known before it matters.
+    - cron: "17 3 * * *"
+  workflow_dispatch:
+
+jobs:
+  compare:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Each mirror matches the page its task reads
+        run: |
+          set -o pipefail
+          status=0
+
+          check () {
+            local name="$1" url="$2" mirror="$3"
+
+            if ! curl -fsSL --retry 3 --retry-delay 5 "$url" -o live.html; then
+              echo "::error::$name — could not fetch $url, so the mirror could not be checked."
+              status=1
+              return
+            fi
+
+            python3 - "$mirror" <<'PY' || status=1
+          import html, io, re, sys
+
+          page = io.open("live.html", encoding="utf-8").read()
+          body = re.search(r"<pre>(.*)</pre>", page, re.S)
+          if not body:
+              print("::error::the page carries no <pre> block; the route may have changed.")
+              raise SystemExit(1)
+
+          live = html.unescape(body.group(1))
+          mirror = io.open(sys.argv[1], encoding="utf-8").read()
+
+          if live == mirror:
+              print(f"ok    {sys.argv[1]}  ({len(mirror)} bytes)")
+              raise SystemExit(0)
+
+          print(f"::error::{sys.argv[1]} and the live page differ "
+                f"({len(mirror)} bytes here, {len(live)} bytes live). "
+                f"Copy the live text over this file, or fix the site.")
+          raise SystemExit(1)
+          PY
+          }
+
+          check "Metal Dock" "https://www.metaldock.co.in/brief-spec"  metaldock/brief-spec.md
+          check "Dockfinity" "https://www.dockfinity.com/brief-spec"   dockfinity/brief-spec.md
+
+          exit $status
