@@ -363,7 +363,18 @@ def render_header_base(canvas,draw,logo,brief,carousel_label=None):
 
 def render_single_thesis(draw,brief):
     tf=get_font('display_bold',FONT_SIZE['thesis']); bottom,_=draw_accent_paragraph(draw,x=SINGLE_THESIS_X,y=SINGLE_THESIS_Y,text=str(brief['thesis']),accent_phrase=str(brief['accent_phrase']),font=tf,normal_fill=TEXT,accent_fill=ACCENT,max_width=SINGLE_THESIS_W,tracking=TRACKING['thesis'],leading=1.08)
-    if bottom>HEADER_CONTENT_LIMIT: raise RenderError(f'Thesis does not fit above fixed content region.\nThesis bottom: {bottom:.1f}px\nMaximum: {HEADER_CONTENT_LIMIT}px')
+    if bottom>HEADER_CONTENT_LIMIT:
+        # The old message gave two pixel figures, which tell whoever wrote the
+        # brief nothing they can act on. The thesis renders at a fixed 54px
+        # because every published slide does, so the only lever is its length.
+        n=len(wrap_word_spans(str(brief['thesis']),tf,SINGLE_THESIS_W,TRACKING['thesis']))
+        chars=len(str(brief['thesis']))
+        raise RenderError(
+            f'The thesis is too long for the header. It wrapped to {n} lines\n'
+            f'and only two fit above the content region.\n'
+            f'It is {chars} characters. About 58 is the ceiling, and the briefs\n'
+            f'published so far run between 38 and 56. Shorten the sentence.\n'
+            f'(bottom {bottom:.0f}px against a maximum of {HEADER_CONTENT_LIMIT}px)')
 
 def item_footer_metadata(item,index): return ' · '.join([f'{index:02d}']+[str(item[k]) for k in ('licence','platform','repo_url','product_url') if item.get(k)])
 def draw_footer_column(draw,x,y,width,label,entries):
