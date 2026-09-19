@@ -243,6 +243,19 @@ Write, every run:
      "www.dockfinity.com", not "dockfinity.com" on its own. This is a bill,
      not a style rule: a post carrying a link is charged at $0.20 against
      $0.015 without one. Name the source and leave the address out.
+
+     A TRAP SPECIFIC TO THIS BRIEF: half the products here are named after
+     their own domain. The rule cannot tell a link from a name, so "tiun.io
+     bundles auth and payments" and "49agents.com launched a hosted runner"
+     are both refused, and the refusal looks baffling because you wrote no
+     link.
+
+     Write the product without its suffix in the X caption: "tiun", not
+     "tiun.io"; "49agents", not "49agents.com". The full name belongs in the
+     JSON item and in the longer captions, where the rule does not apply.
+     Only .com, .in, .io, .co, .org and .net are caught, so "mastra.ai" would
+     pass - drop the suffix anyway, so a caption never depends on which one a
+     product happened to pick.
   4. 8 hashtags, each starting with # and then only letters, digits or
      underscores. Keep them out of the caption strings; they are appended per
      platform, as many as fit.
