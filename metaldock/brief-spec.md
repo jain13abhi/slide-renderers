@@ -635,3 +635,21 @@ STEP 3. Report the route in ONE line at the very top of the reply.
 
 Filing is conditional ONLY on the JSON being valid and the source and figure
 checks passing. Nothing about an image can block it.
+
+STEP 4. End the reply with the JSON, again.
+
+  After everything else - after the filing line, the brief, the self-check -
+  put the complete section 7 JSON one more time, inside a ```json fence, as
+  the last thing in the reply. Byte for byte the same document that went into
+  the draft.
+
+  It looks redundant and it is not. A scheduled run emails its reply, and that
+  email arrives without asking anyone's permission. The Gmail draft does not:
+  the connector asks for approval, the approval is granted for one
+  conversation, and a scheduled run opens a new conversation every day. So the
+  draft is the route that works when somebody is watching, and the reply is
+  the route that works when nobody is.
+
+  Put it in whether or not the draft succeeded. If the draft was created, the
+  copy in the reply is ignored. If it was not, the copy in the reply is the
+  only one that exists.
