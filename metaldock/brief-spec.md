@@ -304,7 +304,15 @@ recommendation of any kind, ever, in any form.
      URL into the caption - a long link spends half the budget and leaves room
      for only one fact. The URL requirement applies to the JSON, not to the
      captions.
-  4. 8 hashtags.
+  4. FACEBOOK CAPTION - the page audience is the trade, so this reads like the
+     LinkedIn one rather than the Instagram one, but shorter: 80 to 120 words.
+     At most 2200 characters.
+  5. THREADS CAPTION - at most 500 characters. This is the platform's own hard
+     cap, not a house style: over it the post does not send at all. Count the
+     characters and print the count. The X caption usually works here with a
+     little more room, but write it as its own line of thought rather than
+     pasting the X one and hoping.
+  6. 8 hashtags.
 
 Captions carry facts, not the machinery behind them. Never write that a figure
 was reconstructed, derived, approximate, or that a comparison base was
@@ -518,12 +526,17 @@ and the figures come from one source and reach the posting queue together.
     "linkedin":  "<the LinkedIn caption from section 5>",
     "instagram": "<the Instagram / WhatsApp caption from section 5>",
     "x":         "<the X caption from section 5, WITHOUT the hashtags>",
+    "facebook":  "<the Facebook caption from section 5>",
+    "threads":   "<the Threads caption from section 5>",
     "hashtags":  ["#Example", "#AnotherOne"]
   }
 
-  a. All four keys required, none empty.
-  b. Lengths, measured on the caption alone: x at most 280, instagram at most
-     2200, linkedin at most 3000.
+  a. All six keys required, none empty. Facebook and Threads became required
+     on 20 September 2026; briefs dated before that carry only the first three
+     and remain valid.
+  b. Lengths, measured on the caption alone: x at most 280, threads at most
+     500, instagram at most 2200, facebook at most 2200, linkedin at most
+     3000.
   c. THE X CAPTION CARRIES NO URL AND NO BARE DOMAIN. Not 'https://...', not
      'www.metaldock.co.in', not 'metaldock.co.in' on its own. This is a bill,
      not a style rule: a post carrying a link is charged at $0.20 against
@@ -531,7 +544,7 @@ and the figures come from one source and reach the posting queue together.
      out. The rule is only on "x".
   d. Hashtags are a non-empty array, each starting with '#' and then only
      letters, digits or underscores. '#StainlessSteel', never '#Stainless
-     Steel'. Keep them OUT of the three caption strings - they are appended per
+     Steel'. Keep them OUT of the caption strings - they are appended per
      platform, as many as fit.
 
 WRITING THE JSON: it must parse. Keep every string on one line in the source; a
@@ -632,6 +645,19 @@ STEP 2. Only if the draft could not be created, try the GitHub connector.
 
   You cannot grant yourself broader GitHub permission. Do not report that you
   have. That claim was made on 16 September 2026 and was not true.
+
+FILING A DATE THAT IS ALREADY PUBLISHED
+
+  The website will not quietly replace a brief that is already on the site.
+  If you file a date that exists and your document differs from what is live,
+  it is refused unless the issue carries a line beginning "CORRECTION:",
+  outside the JSON fence, saying what is being corrected and why.
+
+  You will not normally need this. A scheduled run files its own day once. If
+  you find yourself filing a day that is already published, stop and work out
+  why before adding the line - on 19 September 2026 a second run replaced a
+  nine-benchmark brief with a four-benchmark one, both valid, and nobody
+  would have known.
 
 STEP 3. Report the route in ONE line at the very top of the reply.
 
