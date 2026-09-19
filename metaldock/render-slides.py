@@ -457,6 +457,35 @@ def fit_wrapped_text(
     )
 
 
+def measure_lines(
+    draw: ImageDraw.ImageDraw,
+    x: int,
+    y: int,
+    lines,
+    font_obj,
+    line_gap: int,
+):
+    """Where draw_lines would put each line, without putting it there.
+
+    The cover has to know how tall a headline will be before it commits to a
+    size, and draw_lines can only tell you by drawing it.
+    """
+    boxes = []
+    current_y = y
+
+    for line in lines:
+        box = text_bbox(
+            draw,
+            (x, current_y),
+            line,
+            font_obj,
+        )
+        boxes.append(box)
+        current_y += (box[3] - box[1]) + line_gap
+
+    return boxes
+
+
 def draw_lines(
     draw: ImageDraw.ImageDraw,
     x: int,
@@ -1491,15 +1520,65 @@ def render_cover(
         fill=ACCENT,
     )
 
-    headline_font, headline_lines = fit_wrapped_text(
-        draw=draw,
-        text=BRIEF["cover_headline"],
-        role="display_black",
-        max_width=CONTENT_W,
-        max_lines=2,
-        start_size=42,
-        min_size=32,
-    )
+    # The cover headline has to satisfy two things at once: the two-line
+    # limit, and leaving the hero room to breathe. Fitting only the line limit
+    # - which is what this did - cannot work. A two-line headline at 42px
+    # leaves about -3px of clearance whatever the words are, and the fitter
+    # returned the first size that fit two lines, so it never reached 40px,
+    # where the same headline fits on one line and clears by 36.
+    #
+    # The effect was that any brief whose title wrapped was refused, and the
+    # refusal blamed the wording. On 18 and 19 September 2026 several attempts
+    # were spent rewording a headline that was never the problem.
+    headline_font = None
+    headline_lines = None
+
+    for candidate_size in range(42, 31, -1):
+        candidate_font = font(
+            candidate_size,
+            "display_black",
+        )
+        candidate_lines = wrap_text(
+            draw,
+            BRIEF["cover_headline"],
+            candidate_font,
+            CONTENT_W,
+        )
+
+        if len(candidate_lines) > 2:
+            continue
+
+        probe_boxes = measure_lines(
+            draw,
+            LEFT,
+            382,
+            candidate_lines,
+            candidate_font,
+            4,
+        )
+        probe_thesis = text_bbox(
+            draw,
+            (
+                LEFT,
+                max(rect_bottom(b) for b in probe_boxes) + 10,
+            ),
+            BRIEF["cover_thesis"],
+            font(20, "body_regular"),
+        )
+
+        if (
+            HERO_TOP - rect_bottom(probe_thesis)
+            >= MIN_TITLE_HERO_CLEARANCE
+        ):
+            headline_font = candidate_font
+            headline_lines = candidate_lines
+            break
+
+    if headline_font is None:
+        raise RuntimeError(
+            "Cover title band is too deep even at 32px. "
+            "Shorten BRIEF['cover_headline'] or BRIEF['cover_thesis']."
+        )
 
     headline_boxes = draw_lines(
         draw=draw,
