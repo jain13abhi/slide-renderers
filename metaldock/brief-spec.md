@@ -607,12 +607,25 @@ STEP 1. Create a Gmail draft. This is the normal route.
 
 STEP 2. Only if the draft could not be created, try the GitHub connector.
 
+  IF THE DRAFT WAS CREATED, STOP. Do not open GitHub. Do not read GitHub. Do
+  not check whether an issue exists. Do not touch the connector for any
+  reason, including to confirm that step 1 worked.
+
+  This matters more than it looks. Touching the connector raises an approval
+  prompt, the prompt waits for a human, and the run sits there until somebody
+  notices. On 19 September 2026 the draft was created at 10:11 and the brief
+  published by itself, and the run still sat on a GitHub prompt for most of
+  the morning because this step went looking for an issue that the bridge had
+  already opened. The work was finished; only the asking was left.
+
+  A created draft is a finished job. Report it and end the run.
+
   Repository  jain13abhi/metaldock-website
   Title       brief: <date>   exactly that: lowercase, one colon, one space
   Body        the same fenced JSON
 
-  Check first whether an issue with that exact title already exists; if it
-  does, create nothing. If this route asks for approval and none arrives, do
+  Reaching here means there is no draft. Check first whether an issue with
+  that exact title already exists; if it does, create nothing. If this route asks for approval and none arrives, do
   not wait indefinitely and do not treat it as success. The approval it asks
   for is granted for one conversation only, and a scheduled run does not
   reliably reopen the same conversation.
