@@ -515,6 +515,8 @@ and the reason is written back on the issue.
   e. "title" is the headline for both the page and the slide cover. If the
      build reports it is too deep for the cover, shorten "title" - and the page
      gets the shorter headline too. That is correct: they are one headline.
+     Keep title at 48 characters or fewer and coverThesis at 105 characters or
+     fewer; these are the longest proven published bounds for the fixed cover.
 
 7.2 THE CAPTIONS
 --------------------------------------------------------------------------
