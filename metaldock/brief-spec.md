@@ -605,7 +605,7 @@ Finally, tell the owner which sections had no reliable source that day.
 The production route begins when the clock opens a GitHub issue titled
 "research: YYYY-MM-DD". The repository workflow owns the complete run:
 
-  1. Gemini API 2.5 Flash researches current figures with Google Search from
+  1. Gemini API 2.5 Flash-Lite researches current figures with Google Search from
      the trusted sources in section 1.
   2. Gemini API 2.5 Flash-Lite writes only the section 7 JSON under a response
      schema. It does not file mail, render images, commit or publish.

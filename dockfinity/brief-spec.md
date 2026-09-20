@@ -526,7 +526,7 @@ not applicable.
 The production route begins when the clock opens a GitHub issue titled
 "research: YYYY-MM-DD". The repository workflow then owns the whole run:
 
-  1. Gemini API 2.5 Flash researches current evidence with Google Search.
+  1. Gemini API 2.5 Flash-Lite researches current evidence with Google Search.
   2. Gemini API 2.5 Flash-Lite writes only the section 6 JSON under a response
      schema. It does not file mail, open issues, render images or publish.
   3. The repository parses the JSON and runs its own validator and URL checks.
