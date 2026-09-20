@@ -605,15 +605,16 @@ Finally, tell the owner which sections had no reliable source that day.
 The production route begins when the clock opens a GitHub issue titled
 "research: YYYY-MM-DD". The repository workflow owns the complete run:
 
-  1. Gemini API 2.5 Flash-Lite researches current figures with Google Search from
-     the trusted sources in section 1.
-  2. Gemini API 2.5 Flash-Lite writes only the section 7 JSON under a response
-     schema. It does not file mail, render images, commit or publish.
-  3. The repository runs its existing schema validator, previous-brief figure
+  1. The repository fetches the trusted source pages in section 1 directly,
+     without a paid search service.
+  2. Gemini API 3.5 Flash-Lite analyses the freshly fetched evidence.
+  3. A separate Gemini 3.5 Flash-Lite pass writes only the section 7 JSON under
+     a response schema. It does not file mail, render, commit or publish.
+  4. The repository runs its existing schema validator, previous-brief figure
      reconciliation, independent LME nickel check and cited-URL check.
-  4. The deterministic renderer creates the cover and data slides from the
+  5. The deterministic renderer creates the cover and data slides from the
      validated JSON.
-  5. Only after every check passes are the JSON and slides committed together.
+  6. Only after every check passes are the JSON and slides committed together.
 
 The previous published brief is comparison context only. It may establish the
 earlier value for a stated change, but none of its numbers becomes today's

@@ -526,12 +526,14 @@ not applicable.
 The production route begins when the clock opens a GitHub issue titled
 "research: YYYY-MM-DD". The repository workflow then owns the whole run:
 
-  1. Gemini API 2.5 Flash-Lite researches current evidence with Google Search.
-  2. Gemini API 2.5 Flash-Lite writes only the section 6 JSON under a response
-     schema. It does not file mail, open issues, render images or publish.
-  3. The repository parses the JSON and runs its own validator and URL checks.
-  4. The deterministic renderer makes the slide from validated JSON.
-  5. Only after every check passes are the JSON and slide committed together.
+  1. The repository collects current primary release data from GitHub's public
+     API without a paid search service.
+  2. Gemini API 3.5 Flash-Lite analyses that evidence into a research dossier.
+  3. A separate Gemini 3.5 Flash-Lite pass writes only the section 6 JSON under
+     a response schema. It does not file mail, open issues, render or publish.
+  4. The repository parses the JSON and runs its own validator and URL checks.
+  5. The deterministic renderer makes the slide from validated JSON.
+  6. Only after every check passes are the JSON and slide committed together.
 
 The model's output is data for the validator, not an instruction to another
 connector. Return exactly one JSON object and no route report, code fence,
