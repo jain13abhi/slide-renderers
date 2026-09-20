@@ -332,7 +332,8 @@ and no direction, metricType or section field on an item. Do not import them.
                 each one of: TOOLING | TEARDOWN | CREDITS | PRICING.
                 A section the brief skipped does not appear.
   items         the day's items, ranked
-  readThrough   what this changes for a team, one or two sentences
+  readThrough   what this changes for a team, two or three sentences,
+                260 to 324 characters inclusive
   sources       attribution, surveyDate, disclaimer
 
 6.2 ITEM FIELDS
@@ -469,7 +470,7 @@ The two things you do owe the image are ordinary content rules:
   - accentPhrase is a phrase that already exists in the thesis sentence,
     three to five words long
   - no method language anywhere, because it would be printed
-  - one, two or three items, never four
+  - two or three items, never one or four
 
 WHAT THE IMAGE COMFORTABLY HOLDS. These are not limits the renderer checks
 one by one; they are the sizes the eight published briefs actually used, and
@@ -478,7 +479,7 @@ far past them and the column overfills and the day is refused.
 
   thesis         38 to 56 characters   (58 is the hard ceiling)
   accentPhrase   3 to 5 words          (enforced)
-  readThrough    225 to 324 characters
+  readThrough    260 to 324 characters
   what           80 to 200 characters per item
   whyDifferent   120 to 350 characters per item
   platform       20 to 65 characters
