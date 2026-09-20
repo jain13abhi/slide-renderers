@@ -491,9 +491,9 @@ different headlines. Nothing compared them, so nothing caught it.
 RULES THE WEBSITE ENFORCES. A brief that breaks any of these does not publish,
 and the reason is written back on the issue.
 
-  a. One to three cards per slide. One or two source lines per slide. At most
-     two cover source lines. A slide with a single short card is rejected as
-     underfilled - the renderer measures the spacing and refuses.
+  a. Two or three cards per slide. One or two source lines per slide. At most
+     two cover source lines. Consolidate related material instead of creating
+     a one-card slide: the fixed renderer rejects sparse slides as underfilled.
 
   b. A card that shows a figure MUST carry "benchmark" with the symbol of a
      benchmark in this same brief, and that benchmark's value MUST appear
