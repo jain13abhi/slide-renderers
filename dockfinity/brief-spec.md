@@ -71,11 +71,18 @@ in the next run.
 
   An item is late only once. If it was carried in an earlier run, it is done.
 
-AT MOST THREE ITEMS across all lanes, and at least one.
+TWO OR THREE ITEMS across all lanes. Never one, never four.
 
   This is the slide, not a preference. The brief renders as a single image
-  with a fixed card region, and that region holds one, two or three cards.
-  A fourth is refused and the day does not publish.
+  with a fixed card region.
+
+  ONE ITEM IS NOT ENOUGH. The card carries only the metadata - name, version,
+  licence, platform - so a single card is about 100px of content in a column
+  675px tall, and the renderer refuses a column that empty. On 19 September
+  2026 all three backfill briefs were refused for exactly this, after a
+  rewrite dropped their second item.
+
+  FOUR DO NOT FIT. The region holds three.
 
   An older version of these rules said six. That came from a carousel layout
   this brief no longer uses, and it was wrong: every one of the eight briefs
@@ -498,7 +505,7 @@ pass on a check you did not run is worse than reporting a failure.
   8a. The thesis is 58 characters or fewer. Print the count.
   8b. accentPhrase is three to five words and appears exactly once in the
       thesis. Print the phrase and its word count.
-  8c. There are one, two or three items. Print the count.
+  8c. There are two or three items, never one. Print the count.
   9. sections names only the sections that carried an item today.
  10. The disclaimer matches the required string character for character.
  11. Nothing from the confidential, method or pipeline-leakage lists appears
@@ -516,43 +523,31 @@ not applicable.
 9. FILING
 --------------------------------------------------------------------------
 
-One route. Create a Gmail draft.
+The production route begins when the clock opens a GitHub issue titled
+"research: YYYY-MM-DD". The repository workflow then owns the whole run:
 
-  Mailbox   abhi13jain@gmail.com. The draft must live in that account; the
-            To: address being that mailbox is not enough.
-  Subject   DF-BRIEF <date>, the date as YYYY-MM-DD
-  Body      the complete section 6 JSON inside a ```json fence, and nothing
-            else. No commentary, no captions outside the JSON, no summary.
-            The body is read by a machine and anything else is noise it has to
-            step around.
+  1. Gemini API 2.5 Flash researches current evidence with Google Search.
+  2. Gemini API 2.5 Flash-Lite writes only the section 6 JSON under a response
+     schema. It does not file mail, open issues, render images or publish.
+  3. The repository parses the JSON and runs its own validator and URL checks.
+  4. The deterministic renderer makes the slide from validated JSON.
+  5. Only after every check passes are the JSON and slide committed together.
 
-Leave it as a draft. It must not be sent. A script collects it within ten
-minutes and opens the GitHub issue that publishes the brief.
+The model's output is data for the validator, not an instruction to another
+connector. Return exactly one JSON object and no route report, code fence,
+commentary, self-check transcript or filing status.
 
-DO NOT TOUCH GITHUB. Not to file, not to check whether an issue already
-exists, not to confirm that the draft worked. Touching the connector raises an
-approval prompt, the prompt waits for a human, and the run sits there until
-somebody notices. A created draft is a finished job.
+If research finds fewer than two fully evidenced items, if the Gemini free
+quota is exhausted, or if any validator, URL check or render fails, publish
+nothing. Leave the dated issue open with the exact error so a human can see and
+retry it. Never pad the brief and never weaken a check to make a run pass.
 
-You cannot grant yourself broader permission on any connector. Do not report
-that you have.
+MANUAL RECOVERY. A human may still open "brief: YYYY-MM-DD" with the complete
+section 6 JSON in its body. That skips Gemini but enters the same validation,
+render and publication path. It is recovery, not the scheduled production
+route.
 
 FILING A DATE THAT IS ALREADY PUBLISHED. The website will not quietly replace
-a brief that is already on the site. If you file a date that exists and your
-document differs from what is live, it is refused unless the issue carries a
-line beginning "CORRECTION:", outside the JSON fence, saying what is being
-corrected and why. You will not normally need this: a scheduled run files its
-own day once.
-
-Report the route in ONE line at the very top of the reply, before the brief,
-never after it:
-
-  FILED: Gmail draft created in <mailbox>, subject <subject>.
-  NOT FILED: <what stopped it>.
-
-A failure written in the last line of a long brief is a failure nobody sees.
-
-Then end the reply with the complete section 6 JSON one more time, inside a
-```json fence, byte for byte the same document that went into the draft. It
-looks redundant and it is not: a scheduled run emails its reply, and that
-email arrives without asking anyone's permission.
+a brief that is already on the site. A different document for an existing date
+is refused unless the manual recovery issue carries a line beginning
+"CORRECTION:", outside the JSON fence, saying what is being corrected and why.

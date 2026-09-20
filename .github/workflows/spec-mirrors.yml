@@ -1,15 +1,11 @@
 name: The spec mirrors still match
 
 # Each brief's specification is served from its own site and mirrored here.
-# The second copy exists because a ChatGPT sandbox intermittently fails to
-# resolve a host - it happened to Metal Dock on 17 September 2026 and to
-# Dockfinity on 19 September, on two different accounts and three different
-# hosts. A task that cannot read its rules produces nothing that day, so it
-# is given two addresses and told to try both.
+# Gemini now reads the repository-local authoritative copy during its GitHub
+# Actions job. These shared copies remain the reviewed renderer-side reference
+# and a second, public record of the publication contracts.
 #
-# Two copies drift. A task reading a stale mirror is worse than a task that
-# failed loudly, because it looks finished. This checks them daily and goes
-# red the moment they differ.
+# Two copies drift. This checks them daily and goes red the moment they differ.
 
 on:
   push:
