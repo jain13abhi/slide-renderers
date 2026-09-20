@@ -411,6 +411,22 @@ Never output: marketRead, regulatoryNote, tradingDay, fxNote.
 date and briefDate are the run date. sessionDate is the last completed trading
 session and is never a weekend or a holiday.
 
+NON-TRADING-DAY RULE. This rule is deterministic, not an editorial choice:
+
+  - On Saturday, Sunday, an exchange holiday, or before a new close exists,
+    sessionDate remains the latest completed session shown by the dated source.
+  - Never label the publication date as a trading session merely because the
+    automation runs that day.
+  - If two consecutive publications share sessionDate, the same closing
+    benchmark must keep the same value. A changed close requires a new session;
+    a correction requires correcting the earlier publication explicitly.
+  - A weekend or holiday caption says the actual session date, "Friday close",
+    or "latest completed session". It must not say or imply that the closed
+    market traded "today".
+  - Fresh weekend news, policy, inventory commentary or demand evidence may be
+    added only with its own actual source date. It does not turn into a new
+    exchange close.
+
 Benchmark fields: name, symbol, value, optional unit, change, direction,
 metricType, note, isKeySignal, section, source.
   value carries the complete formatted figure including its unit. For a
