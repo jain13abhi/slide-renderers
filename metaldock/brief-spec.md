@@ -602,49 +602,35 @@ Finally, tell the owner which sections had no reliable source that day.
 9. FILING
 --------------------------------------------------------------------------
 
-There is one filing sequence. Earlier versions of this task carried three,
-contradicting each other.
+The production route begins when the clock opens a GitHub issue titled
+"research: YYYY-MM-DD". The repository workflow owns the complete run:
 
-STEP 1. Create a Gmail draft. This is the normal route.
+  1. Gemini API 2.5 Flash researches current figures with Google Search from
+     the trusted sources in section 1.
+  2. Gemini API 2.5 Flash-Lite writes only the section 7 JSON under a response
+     schema. It does not file mail, render images, commit or publish.
+  3. The repository runs its existing schema validator, previous-brief figure
+     reconciliation, independent LME nickel check and cited-URL check.
+  4. The deterministic renderer creates the cover and data slides from the
+     validated JSON.
+  5. Only after every check passes are the JSON and slides committed together.
 
-  Mailbox   abhi13jain@gmail.com. The draft must live in that account; the
-            To: address being that mailbox is not enough.
-  Subject   MD-BRIEF <date>, the date as YYYY-MM-DD
-  Body      the complete section 7 JSON inside a ```json fence, and nothing
-            else. No commentary, no captions, no summary. The body is read by
-            a machine and anything else is noise it has to step around.
+The previous published brief is comparison context only. It may establish the
+earlier value for a stated change, but none of its numbers becomes today's
+value without fresh evidence from a trusted source in the current run.
 
-  Leave it as a draft. It is read from the mailbox and must not be sent. A
-  script collects it within ten minutes and opens the GitHub issue that
-  publishes the brief.
+The model's output is data for the validators, not instructions to another
+service. Return exactly one JSON object and no route report, code fence,
+commentary or self-check transcript.
 
-STEP 2. Only if the draft could not be created, try the GitHub connector.
+If a current figure cannot be evidenced, Gemini free quota is exhausted, or
+any validator, figure, nickel, URL or render check fails, publish nothing. The
+dated issue remains open with the exact failure. Never weaken a check or invent
+a number to make a run pass.
 
-  IF THE DRAFT WAS CREATED, STOP. Do not open GitHub. Do not read GitHub. Do
-  not check whether an issue exists. Do not touch the connector for any
-  reason, including to confirm that step 1 worked.
-
-  This matters more than it looks. Touching the connector raises an approval
-  prompt, the prompt waits for a human, and the run sits there until somebody
-  notices. On 19 September 2026 the draft was created at 10:11 and the brief
-  published by itself, and the run still sat on a GitHub prompt for most of
-  the morning because this step went looking for an issue that the bridge had
-  already opened. The work was finished; only the asking was left.
-
-  A created draft is a finished job. Report it and end the run.
-
-  Repository  jain13abhi/metaldock-website
-  Title       brief: <date>   exactly that: lowercase, one colon, one space
-  Body        the same fenced JSON
-
-  Reaching here means there is no draft. Check first whether an issue with
-  that exact title already exists; if it does, create nothing. If this route asks for approval and none arrives, do
-  not wait indefinitely and do not treat it as success. The approval it asks
-  for is granted for one conversation only, and a scheduled run does not
-  reliably reopen the same conversation.
-
-  You cannot grant yourself broader GitHub permission. Do not report that you
-  have. That claim was made on 16 September 2026 and was not true.
+MANUAL RECOVERY. A human may still open "brief: YYYY-MM-DD" with the complete
+section 7 JSON in its body. That skips Gemini but enters the same validation,
+figure, render and publication path. It is recovery, not the scheduled route.
 
 FILING A DATE THAT IS ALREADY PUBLISHED
 
@@ -653,42 +639,7 @@ FILING A DATE THAT IS ALREADY PUBLISHED
   it is refused unless the issue carries a line beginning "CORRECTION:",
   outside the JSON fence, saying what is being corrected and why.
 
-  You will not normally need this. A scheduled run files its own day once. If
-  you find yourself filing a day that is already published, stop and work out
-  why before adding the line - on 19 September 2026 a second run replaced a
-  nine-benchmark brief with a four-benchmark one, both valid, and nobody
-  would have known.
-
-STEP 3. Report the route in ONE line at the very top of the reply.
-
-  One of exactly these, before the brief, never after it:
-
-    FILED: Gmail draft created in <mailbox>, subject <subject>.
-    FILED: draft could not be created — issue "brief: <date>" created on
-           jain13abhi/metaldock-website via the GitHub connector instead.
-    NOT FILED: <what stopped both routes>.
-
-  Do not create both. One brief, one route. A failure written in the last line
-  of a long brief is a failure nobody sees; that is how six days of Metal Dock
-  briefs went missing in September without anyone noticing.
-
-Filing is conditional ONLY on the JSON being valid and the source and figure
-checks passing. Nothing about an image can block it.
-
-STEP 4. End the reply with the JSON, again.
-
-  After everything else - after the filing line, the brief, the self-check -
-  put the complete section 7 JSON one more time, inside a ```json fence, as
-  the last thing in the reply. Byte for byte the same document that went into
-  the draft.
-
-  It looks redundant and it is not. A scheduled run emails its reply, and that
-  email arrives without asking anyone's permission. The Gmail draft does not:
-  the connector asks for approval, the approval is granted for one
-  conversation, and a scheduled run opens a new conversation every day. So the
-  draft is the route that works when somebody is watching, and the reply is
-  the route that works when nobody is.
-
-  Put it in whether or not the draft succeeded. If the draft was created, the
-  copy in the reply is ignored. If it was not, the copy in the reply is the
-  only one that exists.
+  This is manual recovery only. A normal `research:` issue never replaces a
+  published day. On 19 September 2026 a second valid run silently replaced a
+  nine-benchmark brief with a four-benchmark one; the correction guard exists
+  so that cannot happen again.
