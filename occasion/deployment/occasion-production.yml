@@ -37,13 +37,13 @@ jobs:
 
     steps:
       - name: Check out the private orchestration repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           persist-credentials: true
 
       - name: Check out the public engine repository read-only
         id: checkout_engine
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           repository: jain13abhi/slide-renderers
           ref: main
