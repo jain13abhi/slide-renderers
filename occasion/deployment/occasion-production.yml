@@ -51,13 +51,14 @@ jobs:
           persist-credentials: false
 
       - name: Verify the persistent runtime
+        id: preflight
         working-directory: engine
         shell: powershell
         run: |
           $ErrorActionPreference = 'Stop'
           python --version
           higgsfield version
-          python -c 'from PIL import Image; print("Pillow", Image.__version__)'
+          python -c "from PIL import Image; print('Pillow', Image.__version__)"
 
       - name: Produce due packages
         id: produce
@@ -83,7 +84,7 @@ jobs:
 
       - name: Commit generated package
         id: archive
-        if: always() && steps.checkout_engine.outcome == 'success'
+        if: always() && steps.checkout_engine.outcome == 'success' && steps.produce.outcome != 'skipped'
         shell: powershell
         run: |
           $ErrorActionPreference = 'Stop'
@@ -100,7 +101,7 @@ jobs:
 
       - name: Deliver package to Telegram
         id: deliver
-        if: always() && steps.archive.outcome == 'success'
+        if: always() && steps.archive.outcome == 'success' && steps.produce.outcome != 'skipped'
         working-directory: engine
         shell: powershell
         run: |
@@ -132,7 +133,7 @@ jobs:
           if ((Test-Path engine/occasion/engine/__main__.py) -and (Test-Path occasion-error.log)) {
             Push-Location engine
             python -m occasion.engine notify-failure `
-              --stage "${{ steps.produce.outcome == 'failure' && 'production' || 'delivery/archive' }}" `
+              --stage "${{ steps.preflight.outcome == 'failure' && 'runner preflight' || (steps.produce.outcome == 'failure' && 'production' || (steps.archive.outcome == 'failure' && 'archive' || 'delivery/state archive')) }}" `
               --detail-file ../occasion-error.log
             Pop-Location
           } elseif (Test-Path engine/occasion/engine/__main__.py) {
