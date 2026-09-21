@@ -19,6 +19,7 @@ implementation was added.
 | Private VPS workflow security | `a52def7` | `f48fd7f` |
 | Partial-success archive and delivery | `9815738` | `8c40b3a` |
 | Private production data and token removal | `4efa6be` | `ef03626` |
+| Always-on Windows runner deployment | `ca6be26` | `73709a5` |
 
 Verification command:
 

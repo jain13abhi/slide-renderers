@@ -13,10 +13,15 @@ class DeploymentContractTests(unittest.TestCase):
             encoding="utf-8"
         )
 
-    def test_template_uses_only_the_private_vps_runner_and_has_no_pr_trigger(self) -> None:
-        self.assertIn("runs-on: [self-hosted, linux, x64, dock-content-vps]", self.workflow)
+    def test_template_uses_only_the_private_desktop_runner_and_has_no_pr_trigger(self) -> None:
+        self.assertIn(
+            "runs-on: [self-hosted, windows, x64, dock-content-desktop]",
+            self.workflow,
+        )
         self.assertNotRegex(self.workflow, re.compile(r"^\s*pull_request:", re.MULTILINE))
         self.assertNotIn("ubuntu-latest", self.workflow)
+        self.assertNotIn("dock-content-vps", self.workflow)
+        self.assertGreaterEqual(self.workflow.count("shell: powershell"), 5)
 
     def test_apps_script_dispatch_and_github_schedule_are_both_supported(self) -> None:
         self.assertIn("workflow_dispatch:", self.workflow)
