@@ -14,7 +14,7 @@ Apps Script (primary IST clock)
 private GitHub orchestration repository
         |
         v
-VPS self-hosted runner
+always-on Windows desktop self-hosted runner
   Gemini: grounded research + structured copy
   Higgsfield CLI: text-free 4:5 background image
   deterministic renderer: locked logo, colour, type, spacing
@@ -31,7 +31,7 @@ repository; never attach it to this public repository.
 
 This design uses the Higgsfield account subscription through its official CLI.
 It does not use the separately billed Higgsfield API. The only unavoidable
-interactive step is the initial `higgsfield auth login` on the VPS, and again
+interactive step is the initial `higgsfield auth login` on the desktop, and again
 if that account session expires.
 
 ## Safety and autonomy rules
@@ -98,7 +98,7 @@ HIGGSFIELD_MODEL=nano_banana_2
 HIGGSFIELD_RESOLUTION=2k
 ```
 
-Higgsfield authentication is stored by the CLI on the VPS and is deliberately
+Higgsfield authentication is stored by the CLI on the desktop and is deliberately
 not copied into GitHub secrets or this repository.
 
 ## One-time deployment
@@ -107,13 +107,14 @@ not copied into GitHub secrets or this repository.
    `dock-content-engine`.
 2. Copy `deployment/occasion-production.yml` into that private repository as
    `.github/workflows/occasion-production.yml`.
-3. On the always-on VPS, install Python 3, Pillow, Git, Node.js, and the official
+3. On the always-on Windows desktop, install Python 3, Pillow, Git, Node.js, and the official
    Higgsfield CLI. Run `higgsfield auth login` and confirm
    `higgsfield account status --json` succeeds.
-4. Register that VPS as a self-hosted runner for the private orchestration
-   repository with labels `self-hosted`, `linux`, `x64`, and
-   `dock-content-vps`. Run it as a service.
-5. Add the four private-repository secrets listed below.
+4. Register that desktop as a self-hosted runner for the private orchestration
+   repository with labels `self-hosted`, `windows`, `x64`, and
+   `dock-content-desktop`. Run it continuously under the same Windows account
+   that owns the Higgsfield login.
+5. Add the three private-repository secrets listed below.
 6. Deploy the updated Apps Script bridge and set the two optional occasion
    properties listed below.
 7. Run a workflow dispatch using `--dry-run` first, then run one controlled
@@ -150,7 +151,7 @@ makes deployment fail-safe and leaves the existing daily briefs untouched.
   Ambiguous commands are not retried automatically.
 - **Render/package failure:** no generated marker is written.
 - **Git archive failure:** Telegram delivery does not begin, preserving the
-  recoverable package on the VPS workspace.
+  recoverable package on the desktop workspace.
 - **Telegram failure:** the generated marker remains pending. The next run sends
   the same card and captions without another Gemini or Higgsfield generation.
 - **Corrupt state:** execution fails closed instead of risking duplicate spend.
