@@ -29,6 +29,17 @@ class DeploymentContractTests(unittest.TestCase):
         self.assertLess(commit_position, delivery_position)
         self.assertIn("notify-failure", self.workflow)
 
+    def test_partial_success_is_archived_and_delivered_without_regeneration(self) -> None:
+        self.assertIn("id: archive", self.workflow)
+        self.assertIn(
+            "if: always() && steps.checkout_engine.outcome == 'success'",
+            self.workflow,
+        )
+        self.assertIn(
+            "if: always() && steps.archive.outcome == 'success'",
+            self.workflow,
+        )
+
     def test_higgsfield_and_gemini_credentials_are_not_hardcoded(self) -> None:
         self.assertIn("secrets.GEMINI_API_KEY", self.workflow)
         self.assertNotRegex(self.workflow, re.compile(r"AIza[0-9A-Za-z_-]{20,}"))
