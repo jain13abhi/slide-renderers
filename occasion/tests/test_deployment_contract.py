@@ -37,13 +37,25 @@ class DeploymentContractTests(unittest.TestCase):
     def test_partial_success_is_archived_and_delivered_without_regeneration(self) -> None:
         self.assertIn("id: archive", self.workflow)
         self.assertIn(
-            "if: always() && steps.checkout_engine.outcome == 'success'",
+            "if: always() && steps.checkout_engine.outcome == 'success' && steps.produce.outcome != 'skipped'",
             self.workflow,
         )
         self.assertIn(
-            "if: always() && steps.archive.outcome == 'success'",
+            "if: always() && steps.archive.outcome == 'success' && steps.produce.outcome != 'skipped'",
             self.workflow,
         )
+
+    def test_windows_preflight_uses_powershell_safe_python_quoting(self) -> None:
+        self.assertIn("id: preflight", self.workflow)
+        self.assertIn(
+            'python -c "from PIL import Image; print(\'Pillow\', Image.__version__)"',
+            self.workflow,
+        )
+
+    def test_failure_notification_reports_the_actual_failed_stage(self) -> None:
+        self.assertIn("steps.preflight.outcome == 'failure'", self.workflow)
+        self.assertIn("steps.produce.outcome == 'failure'", self.workflow)
+        self.assertIn("steps.archive.outcome == 'failure'", self.workflow)
 
     def test_higgsfield_and_gemini_credentials_are_not_hardcoded(self) -> None:
         self.assertIn("secrets.GEMINI_API_KEY", self.workflow)
