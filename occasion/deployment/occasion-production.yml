@@ -42,6 +42,7 @@ jobs:
           persist-credentials: false
 
       - name: Check out the public engine repository with scoped write access
+        id: checkout_engine
         uses: actions/checkout@v4
         with:
           repository: jain13abhi/slide-renderers
@@ -67,7 +68,8 @@ jobs:
           python3 -m occasion.engine produce --date "$DATE" 2>&1 | tee ../occasion-error.log
 
       - name: Commit generated package
-        if: steps.produce.outcome == 'success'
+        id: archive
+        if: always() && steps.checkout_engine.outcome == 'success'
         working-directory: engine
         run: |
           set -euo pipefail
@@ -83,14 +85,14 @@ jobs:
 
       - name: Deliver package to Telegram
         id: deliver
-        if: steps.produce.outcome == 'success'
+        if: always() && steps.archive.outcome == 'success'
         working-directory: engine
         run: |
           set -o pipefail
           python3 -m occasion.engine deliver 2>&1 | tee -a ../occasion-error.log
 
       - name: Commit delivered state
-        if: steps.deliver.outcome == 'success'
+        if: always() && steps.deliver.outcome == 'success'
         working-directory: engine
         run: |
           set -euo pipefail
@@ -104,14 +106,21 @@ jobs:
 
       - name: Notify Telegram about any failure
         if: failure()
-        working-directory: engine
         run: |
-          if [ -f ../occasion-error.log ]; then
+          if [ -f engine/occasion/engine/__main__.py ] && [ -f occasion-error.log ]; then
+            cd engine
             python3 -m occasion.engine notify-failure \
               --stage "${{ steps.produce.outcome == 'failure' && 'production' || 'delivery/archive' }}" \
               --detail-file ../occasion-error.log
-          else
+          elif [ -f engine/occasion/engine/__main__.py ]; then
+            cd engine
             python3 -m occasion.engine notify-failure \
               --stage "runner preflight" \
               --detail "The VPS workflow failed before an engine log was created."
+          else
+            curl --fail-with-body --silent --show-error \
+              --request POST \
+              --data-urlencode "chat_id=${TELEGRAM_CHAT_ID}" \
+              --data-urlencode "text=OCCASION PIPELINE FAILED%0AStage: checkout/preflight%0AThe engine checkout did not complete on the VPS runner." \
+              "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage"
           fi
