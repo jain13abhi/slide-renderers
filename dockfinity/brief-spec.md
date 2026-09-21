@@ -272,14 +272,23 @@ Write, every run:
      Only .com, .in, .io, .co, .org and .net are caught, so "mastra.ai" would
      pass - drop the suffix anyway, so a caption never depends on which one a
      product happened to pick.
-  4. 8 hashtags, each starting with # and then only letters, digits or
+  4. FACEBOOK - 80 to 120 words and at most 2200 characters. Explain the
+     release and its practical business relevance in accessible language.
+  5. THREADS - at most 500 characters. Write it as its own concise line of
+     thought rather than copying the X caption.
+  6. GOOGLE BUSINESS PROFILE UPDATE - 80 to 120 words and at most 1500
+     characters. Make it useful to prospective clients evaluating technology
+     work, not a generic advertisement. Do not put hashtags or a raw URL in
+     this caption. Telegram supplies the daily brief URL separately: choose
+     the Update post type, add a Learn more button, and paste that URL there.
+  7. 8 hashtags, each starting with # and then only letters, digits or
      underscores. Keep them out of the caption strings; they are appended per
      platform, as many as fit.
 
-Dockfinity has no Facebook page and no Threads account, so unlike Metal Dock
-this brief writes no caption for either. If those accounts are created, this
-section and the website's validator both have to change; do not invent the
-captions in the meantime.
+These captions are prepared as a complete manual posting package even when a
+profile is not yet live. Publishing begins only after the relevant business
+profile has been created and verified; caption generation does not depend on
+account credentials.
 
 
 6. THE WEBSITE JSON
@@ -402,6 +411,9 @@ Omit an optional field entirely rather than sending an empty string or null.
     "linkedin": "<the LinkedIn caption>",
     "instagram": "<the Instagram / WhatsApp caption>",
     "x": "<the X caption, WITHOUT the hashtags>",
+    "facebook": "<the Facebook caption>",
+    "threads": "<the Threads caption>",
+    "googleBusiness": "<the Google Business Profile Update>",
     "hashtags": ["#Example", "#AnotherOne"]
   },
   "sources": {
@@ -511,8 +523,9 @@ pass on a check you did not run is worse than reporting a failure.
  10. The disclaimer matches the required string character for character.
  11. Nothing from the confidential, method or pipeline-leakage lists appears
      anywhere in the JSON or the captions.
- 12. Caption lengths, measured on the caption alone: x at most 280, instagram
-     at most 2200, linkedin at most 3000. Print the X count.
+ 12. Caption lengths, measured on the caption alone: x at most 280, threads at
+     most 500, instagram and facebook at most 2200, linkedin at most 3000,
+     googleBusiness at most 1500. Print the X and Threads counts.
  13. The X caption carries no URL and no bare domain. Print the count of URLs
      found, which must be nought.
  14. The JSON parses.

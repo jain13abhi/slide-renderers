@@ -312,7 +312,12 @@ recommendation of any kind, ever, in any form.
      characters and print the count. The X caption usually works here with a
      little more room, but write it as its own line of thought rather than
      pasting the X one and hoping.
-  6. 8 hashtags.
+  6. GOOGLE BUSINESS PROFILE UPDATE - 80 to 120 words and at most 1500
+     characters. Write a useful local-business update for buyers and
+     procurement teams, not an advertisement. Do not put hashtags or a raw URL
+     in this caption. Telegram supplies the daily brief URL separately: choose
+     the Update post type, add a Learn more button, and paste that URL there.
+  7. 8 hashtags.
 
 Captions carry facts, not the machinery behind them. Never write that a figure
 was reconstructed, derived, approximate, or that a comparison base was
@@ -546,15 +551,16 @@ and the figures come from one source and reach the posting queue together.
     "x":         "<the X caption from section 5, WITHOUT the hashtags>",
     "facebook":  "<the Facebook caption from section 5>",
     "threads":   "<the Threads caption from section 5>",
+    "googleBusiness": "<the Google Business Profile Update from section 5>",
     "hashtags":  ["#Example", "#AnotherOne"]
   }
 
-  a. All six keys required, none empty. Facebook and Threads became required
-     on 20 September 2026; briefs dated before that carry only the first three
-     and remain valid.
+  a. All seven keys required, none empty. Facebook and Threads became required
+     on 20 September 2026. googleBusiness becomes required on 22 September
+     2026. Earlier briefs remain valid without fields added after publication.
   b. Lengths, measured on the caption alone: x at most 280, threads at most
      500, instagram at most 2200, facebook at most 2200, linkedin at most
-     3000.
+     3000, googleBusiness at most 1500.
   c. THE X CAPTION CARRIES NO URL AND NO BARE DOMAIN. Not 'https://...', not
      'www.metaldock.co.in', not 'metaldock.co.in' on its own. This is a bill,
      not a style rule: a post carrying a link is charged at $0.20 against
