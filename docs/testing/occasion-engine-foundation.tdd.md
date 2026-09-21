@@ -21,6 +21,7 @@ implementation was added.
 | Private production data and token removal | `4efa6be` | `ef03626` |
 | Always-on Windows runner deployment | `ca6be26` | `73709a5` |
 | Windows preflight and failure-stage hardening | `88a49b5` | `7250c57` |
+| Node 24 checkout runtime | `c852b33` | `f1aa194` |
 
 Verification command:
 
@@ -28,7 +29,7 @@ Verification command:
 python -m unittest discover -s occasion/tests -v
 ```
 
-The suite contains 38 tests covering validation, planning, source locking,
+The suite contains 39 tests covering validation, planning, source locking,
 sensitivity gates, renderer geometry, content bounds, quota budgets, provider
 failure modes, atomic state, resume behavior, Telegram payloads, CLI dry runs,
 and workflow security constraints.

@@ -23,6 +23,10 @@ class DeploymentContractTests(unittest.TestCase):
         self.assertNotIn("dock-content-vps", self.workflow)
         self.assertGreaterEqual(self.workflow.count("shell: powershell"), 5)
 
+    def test_checkout_steps_use_the_node24_action_runtime(self) -> None:
+        self.assertEqual(self.workflow.count("uses: actions/checkout@v5"), 2)
+        self.assertNotIn("uses: actions/checkout@v4", self.workflow)
+
     def test_apps_script_dispatch_and_github_schedule_are_both_supported(self) -> None:
         self.assertIn("workflow_dispatch:", self.workflow)
         self.assertIn("schedule:", self.workflow)
