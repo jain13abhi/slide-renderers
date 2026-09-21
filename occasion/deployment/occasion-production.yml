@@ -121,6 +121,6 @@ jobs:
             curl --fail-with-body --silent --show-error \
               --request POST \
               --data-urlencode "chat_id=${TELEGRAM_CHAT_ID}" \
-              --data-urlencode "text=OCCASION PIPELINE FAILED%0AStage: checkout/preflight%0AThe engine checkout did not complete on the VPS runner." \
+              --data-urlencode $'text=OCCASION PIPELINE FAILED\nStage: checkout/preflight\nThe engine checkout did not complete on the VPS runner.' \
               "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage"
           fi

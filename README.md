@@ -1,11 +1,19 @@
 # Slide renderers
 
-Layout code for the daily Metal Dock and Dockfinity briefs.
+Layout and production code for the daily Metal Dock and Dockfinity briefs and
+the reusable multi-brand occasion-post engine.
 
 | Brand | Script | Output |
 |---|---|---|
 | Metal Dock | `metaldock/render-slides.py` | five 1080×1350 slides + a ZIP |
 | Dockfinity | `dockfinity/render-slides.py` | one 1080×1350 image, or a 3–5 slide carousel |
+| Occasions | `occasion/engine` | image-led 1080×1350 card + platform-ready caption package |
+
+The daily briefs and occasion engine are operationally isolated. Occasion
+generation uses a private GitHub orchestrator and a persistent VPS runner so
+its Higgsfield login is never exposed to this public repository. See
+[`occasion/README.md`](occasion/README.md) for architecture, safety rules, and
+deployment.
 
 ## Why this repository is public
 
