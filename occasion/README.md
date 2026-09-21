@@ -19,7 +19,7 @@ VPS self-hosted runner
   Higgsfield CLI: text-free 4:5 background image
   deterministic renderer: locked logo, colour, type, spacing
         |
-        +--> versioned package and resumable state
+        +--> private versioned package and resumable state
         |
         v
 Telegram: final card + separately copyable captions
@@ -125,8 +125,12 @@ Private orchestration repository secrets:
 GEMINI_API_KEY          Google AI Studio key
 TELEGRAM_BOT_TOKEN      existing bot token
 TELEGRAM_CHAT_ID        existing destination
-SLIDE_RENDERERS_TOKEN   fine-grained token: this repository, Contents read/write
 ```
+
+Generated images, copy packages, and delivery state are committed to the
+private orchestration repository under `data/occasion`. The public renderer
+repository is checked out read-only, so no cross-repository write token is
+needed.
 
 Apps Script properties:
 

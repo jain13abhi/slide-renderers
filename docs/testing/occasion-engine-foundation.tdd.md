@@ -18,6 +18,7 @@ implementation was added.
 | Credential-free scheduler preflight | `c3a5744` | `0067828` |
 | Private VPS workflow security | `a52def7` | `f48fd7f` |
 | Partial-success archive and delivery | `9815738` | `8c40b3a` |
+| Private production data and token removal | `4efa6be` | `ef03626` |
 
 Verification command:
 
@@ -25,7 +26,7 @@ Verification command:
 python -m unittest discover -s occasion/tests -v
 ```
 
-The suite contains 35 tests covering validation, planning, source locking,
+The suite contains 36 tests covering validation, planning, source locking,
 sensitivity gates, renderer geometry, content bounds, quota budgets, provider
 failure modes, atomic state, resume behavior, Telegram payloads, CLI dry runs,
 and workflow security constraints.

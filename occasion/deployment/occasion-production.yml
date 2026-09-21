@@ -16,7 +16,7 @@ on:
     - cron: "23 3 * * *"
 
 permissions:
-  contents: read
+  contents: write
 
 concurrency:
   group: occasion-production
@@ -39,17 +39,16 @@ jobs:
       - name: Check out the private orchestration repository
         uses: actions/checkout@v4
         with:
-          persist-credentials: false
+          persist-credentials: true
 
-      - name: Check out the public engine repository with scoped write access
+      - name: Check out the public engine repository read-only
         id: checkout_engine
         uses: actions/checkout@v4
         with:
           repository: jain13abhi/slide-renderers
           ref: main
           path: engine
-          token: ${{ secrets.SLIDE_RENDERERS_TOKEN }}
-          persist-credentials: true
+          persist-credentials: false
 
       - name: Verify the persistent runtime
         working-directory: engine
@@ -65,17 +64,21 @@ jobs:
         run: |
           set -o pipefail
           DATE="${RUN_DATE:-$(TZ=Asia/Kolkata date +%F)}"
-          python3 -m occasion.engine produce --date "$DATE" 2>&1 | tee ../occasion-error.log
+          python3 -m occasion.engine produce \
+            --date "$DATE" \
+            --state-root ../data/occasion/state \
+            --output-root ../data/occasion/production \
+            --manifest ../data/occasion/production/manifest.json \
+            2>&1 | tee ../occasion-error.log
 
       - name: Commit generated package
         id: archive
         if: always() && steps.checkout_engine.outcome == 'success'
-        working-directory: engine
         run: |
           set -euo pipefail
           git config user.name "dock-content-engine[bot]"
           git config user.email "dock-content-engine@users.noreply.github.com"
-          git add occasion/production occasion/state
+          git add data/occasion/production data/occasion/state
           if git diff --cached --quiet; then
             echo "No new occasion package was due."
           else
@@ -89,14 +92,15 @@ jobs:
         working-directory: engine
         run: |
           set -o pipefail
-          python3 -m occasion.engine deliver 2>&1 | tee -a ../occasion-error.log
+          python3 -m occasion.engine deliver \
+            --state-root ../data/occasion/state \
+            2>&1 | tee -a ../occasion-error.log
 
       - name: Commit delivered state
         if: always() && steps.deliver.outcome == 'success'
-        working-directory: engine
         run: |
           set -euo pipefail
-          git add occasion/state
+          git add data/occasion/state
           if git diff --cached --quiet; then
             echo "No delivery-state update was required."
           else

@@ -45,6 +45,13 @@ class DeploymentContractTests(unittest.TestCase):
         self.assertNotRegex(self.workflow, re.compile(r"AIza[0-9A-Za-z_-]{20,}"))
         self.assertNotIn("HIGGSFIELD_API_KEY", self.workflow)
 
+    def test_generated_content_stays_private_without_cross_repository_token(self) -> None:
+        self.assertIn("permissions:\n  contents: write", self.workflow)
+        self.assertIn("data/occasion/production", self.workflow)
+        self.assertIn("data/occasion/state", self.workflow)
+        self.assertNotIn("SLIDE_RENDERERS_TOKEN", self.workflow)
+        self.assertIn("persist-credentials: false", self.workflow)
+
 
 if __name__ == "__main__":
     unittest.main()
