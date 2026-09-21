@@ -171,9 +171,9 @@ def run_job(
     marker_payload = {
         "schemaVersion": 1,
         "jobKey": job.key,
-        "status": "completed",
+        "status": "generated",
         "package": str(package),
-        "completedAt": generated_at,
+        "generatedAt": generated_at,
     }
     _write_json_atomic(marker, marker_payload)
     return JobResult(
