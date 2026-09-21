@@ -86,6 +86,20 @@ def registry_fixture() -> dict:
 
 
 class RegistryTests(unittest.TestCase):
+    def test_repository_registry_is_valid_and_dussehra_is_locked(self) -> None:
+        repository_root = Path(__file__).resolve().parents[2]
+
+        registry = load_registry(
+            repository_root / "occasion" / "registry.json",
+            asset_root=repository_root,
+        )
+        jobs = plan_jobs(registry, as_of=date(2026, 10, 6), completed=set())
+
+        self.assertEqual(
+            [job.key for job in jobs],
+            ["dussehra:2026:dockfinity", "dussehra:2026:metaldock"],
+        )
+
     def test_load_registry_validates_and_indexes_configuration(self) -> None:
         with tempfile.TemporaryDirectory() as folder:
             root = Path(folder)
