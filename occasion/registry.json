@@ -1,0 +1,234 @@
+{
+  "version": 1,
+  "defaults": {
+    "leadDays": 14,
+    "maxImageAttempts": 2
+  },
+  "brands": [
+    {
+      "id": "metaldock",
+      "name": "Metal Dock",
+      "enabled": true,
+      "logo": "assets/metaldock/logo-black.png",
+      "rendererProfile": {
+        "accent": "#1F57C3",
+        "text": "#FFFFFF",
+        "overlay": "#07152F"
+      },
+      "channels": ["telegram", "linkedin", "instagram", "facebook", "threads", "x", "google-business"]
+    },
+    {
+      "id": "dockfinity",
+      "name": "Dockfinity",
+      "enabled": true,
+      "logo": "assets/dockfinity/logo-white.png",
+      "rendererProfile": {
+        "accent": "#E6B454",
+        "text": "#FFFFFF",
+        "overlay": "#0B1120"
+      },
+      "channels": ["telegram", "linkedin", "instagram", "facebook", "threads", "x", "google-business"]
+    },
+    {
+      "id": "paatra",
+      "name": "Paatra",
+      "enabled": true,
+      "logo": "assets/metaldock/paatra-logo.png",
+      "rendererProfile": {
+        "accent": "#D7A34D",
+        "text": "#FFFFFF",
+        "overlay": "#351C0C"
+      },
+      "channels": ["telegram", "instagram", "facebook", "google-business"]
+    },
+    {
+      "id": "dockware-labs",
+      "name": "Dockware Labs",
+      "enabled": false,
+      "logo": "assets/dockware-labs/logo.png",
+      "rendererProfile": {
+        "accent": "#6EE7F2",
+        "text": "#FFFFFF",
+        "overlay": "#07131D"
+      },
+      "channels": ["telegram", "linkedin", "x"]
+    },
+    {
+      "id": "trading-dock",
+      "name": "Trading Dock",
+      "enabled": false,
+      "logo": "assets/trading-dock/logo.png",
+      "rendererProfile": {
+        "accent": "#46D6A3",
+        "text": "#FFFFFF",
+        "overlay": "#071B16"
+      },
+      "channels": ["telegram", "linkedin", "x"]
+    },
+    {
+      "id": "docklytics",
+      "name": "Docklytics",
+      "enabled": false,
+      "logo": "assets/docklytics/logo.png",
+      "rendererProfile": {
+        "accent": "#7FB3FF",
+        "text": "#FFFFFF",
+        "overlay": "#09152A"
+      },
+      "channels": ["telegram", "linkedin", "x"]
+    },
+    {
+      "id": "impressio-dock",
+      "name": "Impressio Dock",
+      "enabled": false,
+      "logo": "assets/impressio-dock/logo.png",
+      "rendererProfile": {
+        "accent": "#FF8A9B",
+        "text": "#FFFFFF",
+        "overlay": "#2A0B18"
+      },
+      "channels": ["telegram", "instagram", "facebook"]
+    }
+  ],
+  "events": [
+    {
+      "id": "vishwakarma-puja",
+      "name": "Vishwakarma Puja",
+      "category": "religious",
+      "tradition": "Metal Dock follows the eastern Indian Kanya Sankranti shop-floor observance followed by its workforce.",
+      "brandIds": ["metaldock"],
+      "imageDirection": "A respectfully prepared Indian metal workshop, cleaned tools and machines decorated with marigold garlands, warm natural light, no deity depiction.",
+      "sensitivity": "standard"
+    },
+    {
+      "id": "dussehra",
+      "name": "Dussehra / Vijayadashami",
+      "category": "religious",
+      "tradition": "North Indian Vijayadashami, the tenth day following Sharad Navratri.",
+      "brandIds": ["metaldock", "dockfinity"],
+      "imageDirection": "A refined contemporary Indian scene about honouring the instruments of one's work, auspicious beginning, marigold and warm morning light, culturally respectful and photorealistic.",
+      "sensitivity": "standard"
+    },
+    {
+      "id": "dhanteras",
+      "name": "Dhanteras",
+      "category": "religious",
+      "tradition": "North Indian Dhantrayodashi and the pan-Indian trade custom of acquiring metal vessels.",
+      "brandIds": ["metaldock", "paatra"],
+      "imageDirection": "An elegant Indian home with newly acquired stainless-steel vessels, diya reflections, restrained festive decoration, product-realistic metal surfaces.",
+      "sensitivity": "standard"
+    },
+    {
+      "id": "diwali",
+      "name": "Diwali / Lakshmi Puja",
+      "category": "religious",
+      "tradition": "North Indian Lakshmi Puja on Kartik Amavasya.",
+      "brandIds": ["metaldock", "dockfinity", "paatra"],
+      "imageDirection": "A distinctive premium Indian Diwali environment with warm diyas, subtle rangoli and real material texture, spacious composition for a minimal greeting.",
+      "sensitivity": "standard"
+    },
+    {
+      "id": "bhai-dooj",
+      "name": "Bhai Dooj",
+      "category": "religious",
+      "tradition": "North Indian Bhai Dooj.",
+      "brandIds": [],
+      "imageDirection": "A quiet, respectful sibling ritual in a contemporary Indian home.",
+      "sensitivity": "standard"
+    },
+    {
+      "id": "makar-sankranti",
+      "name": "Makar Sankranti",
+      "category": "religious",
+      "tradition": "North Indian solar observance on the sun's entry into Makara.",
+      "brandIds": ["metaldock", "paatra"],
+      "imageDirection": "Winter sunlight, sesame and jaggery, kites at a distance, and polished Indian serveware in a restrained editorial photograph.",
+      "sensitivity": "standard"
+    },
+    {
+      "id": "republic-day",
+      "name": "Republic Day",
+      "category": "national",
+      "tradition": "Indian constitutional national observance fixed on 26 January.",
+      "brandIds": ["metaldock", "dockfinity", "paatra"],
+      "imageDirection": "A contemporary Indian workplace with restrained saffron, white and green light accents, dignified and non-partisan, no political figures.",
+      "sensitivity": "standard"
+    },
+    {
+      "id": "holi",
+      "name": "Holi",
+      "category": "religious",
+      "tradition": "North Indian Rangwali Holi, the day after Holika Dahan.",
+      "brandIds": ["metaldock", "dockfinity"],
+      "imageDirection": "A workplace at rest with traces of natural festival colour in soft daylight, sophisticated rather than crowded.",
+      "sensitivity": "standard"
+    },
+    {
+      "id": "mahavir-jayanti",
+      "name": "Mahavir Jayanti",
+      "category": "religious",
+      "tradition": "The applicable Jain household tradition must be reconfirmed before activation.",
+      "brandIds": ["metaldock", "dockfinity"],
+      "imageDirection": "Minimal peaceful natural setting expressing restraint, non-possession and compassion, no deity or sacred-symbol invention.",
+      "sensitivity": "approval-required"
+    },
+    {
+      "id": "akshaya-tritiya",
+      "name": "Akshaya Tritiya",
+      "category": "religious",
+      "tradition": "North Indian and pan-Indian trade observance.",
+      "brandIds": ["metaldock", "paatra"],
+      "imageDirection": "Refined Indian metal craft and household objects in fresh morning light, auspicious but not sales-led.",
+      "sensitivity": "standard"
+    },
+    {
+      "id": "independence-day",
+      "name": "Independence Day",
+      "category": "national",
+      "tradition": "Indian national observance fixed on 15 August.",
+      "brandIds": ["metaldock", "dockfinity", "paatra"],
+      "imageDirection": "A confident modern Indian workplace with restrained tricolour light and locally made objects, dignified and non-partisan.",
+      "sensitivity": "standard"
+    },
+    {
+      "id": "paryushan-kshamavani",
+      "name": "Kshamavani / Micchami Dukkadam",
+      "category": "religious",
+      "tradition": "The household's Svetambar or Digambar observance must be confirmed before another date is locked.",
+      "brandIds": ["metaldock", "dockfinity"],
+      "imageDirection": "A quiet image about reflection and forgiveness using natural light and restrained Indian material culture, without invented sacred symbols.",
+      "sensitivity": "approval-required"
+    },
+    {
+      "id": "msme-day",
+      "name": "Micro-, Small and Medium-sized Enterprises Day",
+      "category": "global",
+      "tradition": "United Nations international observance fixed on 27 June.",
+      "brandIds": ["metaldock", "dockfinity", "paatra", "dockware-labs", "trading-dock", "docklytics", "impressio-dock"],
+      "imageDirection": "A real small-business team at work across manufacturing and digital tools, human, credible and globally inclusive.",
+      "sensitivity": "standard"
+    }
+  ],
+  "occurrences": [
+    {
+      "eventId": "dussehra",
+      "date": "2026-10-20",
+      "status": "locked",
+      "verifiedAt": "2026-09-21",
+      "sources": [
+        "https://www.iirs.gov.in/holidaycalender",
+        "https://nhai.gov.in/assets/pdf/NHAI_Table_Calendar-2026.pdf"
+      ]
+    },
+    {
+      "eventId": "diwali",
+      "date": "2026-11-08",
+      "status": "locked",
+      "verifiedAt": "2026-09-21",
+      "sources": [
+        "https://www.iirs.gov.in/holidaycalender",
+        "https://www.indiapost.gov.in/holidays-list"
+      ]
+    }
+  ]
+}
