@@ -1,0 +1,117 @@
+name: Produce and deliver occasion posts
+
+# SECURITY: copy this workflow into a PRIVATE orchestration repository. Never
+# attach the persistent VPS runner to the public slide-renderers repository.
+
+on:
+  workflow_dispatch:
+    inputs:
+      date:
+        description: "Planning date in IST (YYYY-MM-DD); Apps Script supplies it"
+        required: false
+        type: string
+  schedule:
+    # Backup only. The primary clock is Apps Script. This is 08:53 IST and is
+    # intentionally away from the start of the UTC hour.
+    - cron: "23 3 * * *"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: occasion-production
+  cancel-in-progress: false
+
+jobs:
+  produce:
+    runs-on: [self-hosted, linux, x64, dock-content-vps]
+    timeout-minutes: 45
+    env:
+      GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+      GEMINI_MODEL: gemini-3.5-flash-lite
+      HIGGSFIELD_MODEL: nano_banana_2
+      HIGGSFIELD_RESOLUTION: 2k
+      TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+      TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+      RUN_DATE: ${{ inputs.date }}
+
+    steps:
+      - name: Check out the private orchestration repository
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - name: Check out the public engine repository with scoped write access
+        uses: actions/checkout@v4
+        with:
+          repository: jain13abhi/slide-renderers
+          ref: main
+          path: engine
+          token: ${{ secrets.SLIDE_RENDERERS_TOKEN }}
+          persist-credentials: true
+
+      - name: Verify the persistent runtime
+        working-directory: engine
+        run: |
+          set -euo pipefail
+          python3 --version
+          higgsfield version
+          python3 -c 'from PIL import Image; print("Pillow", Image.__version__)'
+
+      - name: Produce due packages
+        id: produce
+        working-directory: engine
+        run: |
+          set -o pipefail
+          DATE="${RUN_DATE:-$(TZ=Asia/Kolkata date +%F)}"
+          python3 -m occasion.engine produce --date "$DATE" 2>&1 | tee ../occasion-error.log
+
+      - name: Commit generated package
+        if: steps.produce.outcome == 'success'
+        working-directory: engine
+        run: |
+          set -euo pipefail
+          git config user.name "dock-content-engine[bot]"
+          git config user.email "dock-content-engine@users.noreply.github.com"
+          git add occasion/production occasion/state
+          if git diff --cached --quiet; then
+            echo "No new occasion package was due."
+          else
+            git commit -m "occasion: generate due production packages"
+            git push origin HEAD:main
+          fi
+
+      - name: Deliver package to Telegram
+        id: deliver
+        if: steps.produce.outcome == 'success'
+        working-directory: engine
+        run: |
+          set -o pipefail
+          python3 -m occasion.engine deliver 2>&1 | tee -a ../occasion-error.log
+
+      - name: Commit delivered state
+        if: steps.deliver.outcome == 'success'
+        working-directory: engine
+        run: |
+          set -euo pipefail
+          git add occasion/state
+          if git diff --cached --quiet; then
+            echo "No delivery-state update was required."
+          else
+            git commit -m "occasion: record Telegram delivery"
+            git push origin HEAD:main
+          fi
+
+      - name: Notify Telegram about any failure
+        if: failure()
+        working-directory: engine
+        run: |
+          if [ -f ../occasion-error.log ]; then
+            python3 -m occasion.engine notify-failure \
+              --stage "${{ steps.produce.outcome == 'failure' && 'production' || 'delivery/archive' }}" \
+              --detail-file ../occasion-error.log
+          else
+            python3 -m occasion.engine notify-failure \
+              --stage "runner preflight" \
+              --detail "The VPS workflow failed before an engine log was created."
+          fi
