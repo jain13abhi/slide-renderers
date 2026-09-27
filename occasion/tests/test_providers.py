@@ -4,8 +4,11 @@ import json
 import tempfile
 import unittest
 from datetime import date
+from io import BytesIO
 from pathlib import Path
 from types import SimpleNamespace
+from unittest import mock
+from urllib.error import HTTPError
 
 from PIL import Image
 
@@ -31,6 +34,77 @@ class ProviderTestCase(unittest.TestCase):
 
 
 class GeminiTests(ProviderTestCase):
+    @staticmethod
+    def _http_error(code: int, message: str, *, retry_after: str | None = None) -> HTTPError:
+        headers = {"Retry-After": retry_after} if retry_after is not None else {}
+        body = json.dumps({"error": {"code": code, "message": message}}).encode("utf-8")
+        return HTTPError(
+            "https://generativelanguage.googleapis.com/test",
+            code,
+            message,
+            headers,
+            BytesIO(body),
+        )
+
+    def test_http_transport_retries_429_then_returns_text(self) -> None:
+        delays: list[float] = []
+        success = mock.MagicMock()
+        success.__enter__.return_value.read.return_value = json.dumps(
+            {"candidates": [{"content": {"parts": [{"text": "Recovered"}]}}]}
+        ).encode("utf-8")
+
+        drafter = GeminiDrafter(
+            api_key="test-key",
+            retry_attempts=3,
+            retry_base_seconds=0,
+            sleep=delays.append,
+        )
+        with mock.patch(
+            "occasion.engine.providers.request.urlopen",
+            side_effect=[self._http_error(429, "Temporary quota", retry_after="0"), success],
+        ) as urlopen:
+            result = drafter._transport({"contents": []})
+
+        self.assertEqual(result, "Recovered")
+        self.assertEqual(urlopen.call_count, 2)
+        self.assertEqual(delays, [0])
+
+    def test_http_transport_reports_quota_detail_after_bounded_retries(self) -> None:
+        delays: list[float] = []
+        errors = [self._http_error(429, "Free-tier daily quota exhausted") for _ in range(3)]
+        drafter = GeminiDrafter(
+            api_key="test-key",
+            retry_attempts=3,
+            retry_base_seconds=0,
+            sleep=delays.append,
+        )
+
+        with mock.patch("occasion.engine.providers.request.urlopen", side_effect=errors) as urlopen:
+            with self.assertRaisesRegex(PipelineError, "Free-tier daily quota exhausted"):
+                drafter._transport({"contents": []})
+
+        self.assertEqual(urlopen.call_count, 3)
+        self.assertEqual(delays, [0, 0])
+
+    def test_http_transport_does_not_retry_non_transient_400(self) -> None:
+        delays: list[float] = []
+        drafter = GeminiDrafter(
+            api_key="test-key",
+            retry_attempts=3,
+            retry_base_seconds=0,
+            sleep=delays.append,
+        )
+
+        with mock.patch(
+            "occasion.engine.providers.request.urlopen",
+            side_effect=self._http_error(400, "Invalid request"),
+        ) as urlopen:
+            with self.assertRaisesRegex(PipelineError, "Invalid request"):
+                drafter._transport({"contents": []})
+
+        self.assertEqual(urlopen.call_count, 1)
+        self.assertEqual(delays, [])
+
     def test_research_runs_once_and_invalid_draft_gets_one_bounded_correction(self) -> None:
         calls: list[dict] = []
         responses = iter(["Grounded research packet", "{}", json.dumps(valid_draft())])
