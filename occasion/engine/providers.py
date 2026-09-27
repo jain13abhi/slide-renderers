@@ -4,9 +4,11 @@ from __future__ import annotations
 
 import json
 import subprocess
+import time
 from pathlib import Path
 from typing import Any, Callable, Mapping
 from urllib import request
+from urllib.error import HTTPError
 
 from PIL import Image
 
@@ -16,6 +18,26 @@ from .pipeline import Draft, PipelineError
 GeminiTransport = Callable[[dict[str, Any]], str]
 CommandRunner = Callable[[list[str]], Any]
 Downloader = Callable[[str], bytes]
+Sleeper = Callable[[float], None]
+
+_TRANSIENT_GEMINI_STATUS_CODES = {408, 429, 500, 502, 503, 504}
+
+
+def _gemini_http_error_detail(error: HTTPError) -> str:
+    try:
+        raw = error.read().decode("utf-8", errors="replace")
+    except Exception:
+        raw = ""
+    if raw:
+        try:
+            payload = json.loads(raw)
+            api_error = payload.get("error") if isinstance(payload, dict) else None
+            message = api_error.get("message") if isinstance(api_error, dict) else None
+            if isinstance(message, str) and message.strip():
+                return message.strip()[:800]
+        except json.JSONDecodeError:
+            return raw.strip()[:800]
+    return str(error.reason or error)
 
 
 def _gemini_text(payload: Mapping[str, Any]) -> str:
@@ -45,9 +67,19 @@ class GeminiDrafter:
         api_key: str | None = None,
         model: str = "gemini-3.5-flash-lite",
         timeout_seconds: int = 120,
+        retry_attempts: int = 3,
+        retry_base_seconds: float = 5,
+        sleep: Sleeper = time.sleep,
     ) -> None:
+        if retry_attempts < 1:
+            raise ValueError("retry_attempts must be positive")
+        if retry_base_seconds < 0:
+            raise ValueError("retry_base_seconds cannot be negative")
         self.model = model
         self.timeout_seconds = timeout_seconds
+        self.retry_attempts = retry_attempts
+        self.retry_base_seconds = retry_base_seconds
+        self._sleep = sleep
         if transport is not None:
             self._transport = transport
         else:
@@ -73,11 +105,33 @@ class GeminiDrafter:
                     "x-goog-api-key": api_key,
                 },
             )
-            try:
-                with request.urlopen(req, timeout=self.timeout_seconds) as response:
-                    payload = json.loads(response.read().decode("utf-8"))
-            except Exception as exc:
-                raise PipelineError(f"Gemini request failed: {exc}") from exc
+            payload: Any = None
+            for attempt in range(1, self.retry_attempts + 1):
+                try:
+                    with request.urlopen(req, timeout=self.timeout_seconds) as response:
+                        payload = json.loads(response.read().decode("utf-8"))
+                    break
+                except HTTPError as exc:
+                    if (
+                        exc.code in _TRANSIENT_GEMINI_STATUS_CODES
+                        and attempt < self.retry_attempts
+                    ):
+                        retry_after = exc.headers.get("Retry-After") if exc.headers else None
+                        try:
+                            delay = float(retry_after) if retry_after is not None else None
+                        except ValueError:
+                            delay = None
+                        if delay is None:
+                            delay = self.retry_base_seconds * (2 ** (attempt - 1))
+                        self._sleep(max(0, min(delay, 60)))
+                        continue
+                    detail = _gemini_http_error_detail(exc)
+                    raise PipelineError(
+                        "Gemini request failed after "
+                        f"{attempt} attempt(s): HTTP {exc.code}: {detail}"
+                    ) from exc
+                except Exception as exc:
+                    raise PipelineError(f"Gemini request failed: {exc}") from exc
             if not isinstance(payload, dict):
                 raise PipelineError("Gemini response was not an object")
             return _gemini_text(payload)
