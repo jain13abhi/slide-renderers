@@ -157,6 +157,34 @@ Clearly distinguish verified facts from interpretation. Do not change the locked
 concise research packet with source URLs. Do not draft marketing copy yet."""
 
     @staticmethod
+    def _is_grounding_quota_error(error: PipelineError) -> bool:
+        detail = str(error).lower()
+        return "http 429" in detail and (
+            "quota" in detail or "resource_exhausted" in detail
+        )
+
+    @staticmethod
+    def _locked_research_packet(job: Job) -> str:
+        sources = "\n".join(f"- {url}" for url in job.occurrence.sources)
+        return f"""LOCKED REGISTRY RESEARCH FALLBACK
+
+Google Search grounding was unavailable because its bounded quota was exhausted. Use only the
+following already-validated registry facts. Do not infer a different date, tradition, or event.
+
+Event: {job.event.name}
+Confirmed occurrence date: {job.publish_date.isoformat()}
+Tradition and regional interpretation: {job.event.tradition}
+Category: {job.event.category}
+Cultural sensitivity: {job.event.sensitivity}
+Brand: {job.brand.name}
+Brand-specific angle and visual direction: {job.event.image_direction}
+Curated locked sources:
+{sources}
+
+The URLs above are source attribution from the validated calendar registry; no live-search claim
+is being made. Keep the copy restrained, culturally safe, and consistent with these locked facts."""
+
+    @staticmethod
     def _draft_prompt(job: Job, research: str, correction: str | None = None) -> str:
         channels = ", ".join(job.brand.channels)
         correction_text = f"\nThe previous draft failed validation: {correction}\nCorrect only those fields." if correction else ""
@@ -189,7 +217,12 @@ geometry are locked and are not part of this response.{correction_text}"""
             "tools": [{"google_search": {}}],
             "generationConfig": {"temperature": 0.15},
         }
-        research = self._transport(research_body)
+        try:
+            research = self._transport(research_body)
+        except PipelineError as exc:
+            if not self._is_grounding_quota_error(exc):
+                raise
+            research = self._locked_research_packet(job)
         correction: str | None = None
         for _ in range(2):
             draft_body = {
