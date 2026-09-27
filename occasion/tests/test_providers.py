@@ -124,6 +124,40 @@ class GeminiTests(ProviderTestCase):
         self.assertEqual(calls[1]["generationConfig"]["responseMimeType"], "application/json")
         self.assertEqual(calls[2]["generationConfig"]["responseMimeType"], "application/json")
 
+    def test_grounding_quota_uses_locked_registry_packet_then_drafts(self) -> None:
+        calls: list[dict] = []
+
+        def transport(body: dict) -> str:
+            calls.append(body)
+            if len(calls) == 1:
+                raise PipelineError(
+                    "Gemini request failed after 3 attempt(s): HTTP 429: quota exceeded"
+                )
+            return json.dumps(valid_draft())
+
+        draft = GeminiDrafter(transport=transport).draft(self.job)
+
+        self.assertEqual(draft.eyebrow, valid_draft()["eyebrow"])
+        self.assertEqual(len(calls), 2)
+        fallback_prompt = calls[1]["contents"][0]["parts"][0]["text"]
+        self.assertIn("LOCKED REGISTRY RESEARCH FALLBACK", fallback_prompt)
+        self.assertIn(self.job.event.name, fallback_prompt)
+        self.assertIn(self.job.publish_date.isoformat(), fallback_prompt)
+        self.assertIn(self.job.occurrence.sources[0], fallback_prompt)
+        self.assertNotIn("tools", calls[1])
+
+    def test_non_quota_research_failure_still_stops_before_drafting(self) -> None:
+        calls: list[dict] = []
+
+        def transport(body: dict) -> str:
+            calls.append(body)
+            raise PipelineError("Gemini request failed after 1 attempt(s): HTTP 400: invalid")
+
+        with self.assertRaisesRegex(PipelineError, "HTTP 400"):
+            GeminiDrafter(transport=transport).draft(self.job)
+
+        self.assertEqual(len(calls), 1)
+
     def test_two_invalid_drafts_fail_without_a_third_drafting_call(self) -> None:
         calls: list[dict] = []
 
