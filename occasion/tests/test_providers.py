@@ -12,7 +12,7 @@ from urllib.error import HTTPError
 
 from PIL import Image
 
-from occasion.engine import GenerationBudget, load_registry, plan_jobs
+from occasion.engine import GenerationBudget, load_registry, plan_jobs, providers as provider_module
 from occasion.engine.pipeline import PipelineError
 from occasion.engine.providers import GeminiDrafter, HiggsfieldProvider
 
@@ -172,6 +172,23 @@ class GeminiTests(ProviderTestCase):
 
 
 class HiggsfieldTests(ProviderTestCase):
+    def test_default_runner_resolves_windows_command_shim_before_launch(self) -> None:
+        resolved = r"C:\Users\dockf\AppData\Roaming\npm\higgsfield.cmd"
+        completed = SimpleNamespace(returncode=0, stdout="ok", stderr="")
+
+        with mock.patch.object(
+            provider_module.shutil, "which", return_value=resolved
+        ) as which, mock.patch.object(
+            provider_module.subprocess, "run", return_value=completed
+        ) as run:
+            result = provider_module._default_run(["higgsfield", "version"])
+
+        self.assertIs(result, completed)
+        which.assert_called_once_with("higgsfield")
+        run.assert_called_once_with(
+            [resolved, "version"], capture_output=True, text=True, check=False
+        )
+
     def test_provider_checks_account_generates_once_and_downloads_completed_image(self) -> None:
         commands: list[list[str]] = []
 

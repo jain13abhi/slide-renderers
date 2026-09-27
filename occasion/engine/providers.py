@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import shutil
 import subprocess
 import time
 from pathlib import Path
@@ -247,7 +248,10 @@ geometry are locked and are not part of this response.{correction_text}"""
 
 
 def _default_run(command: list[str]) -> subprocess.CompletedProcess[str]:
-    return subprocess.run(command, capture_output=True, text=True, check=False)
+    executable = shutil.which(command[0]) or command[0]
+    return subprocess.run(
+        [executable, *command[1:]], capture_output=True, text=True, check=False
+    )
 
 
 def _default_download(url: str) -> bytes:
