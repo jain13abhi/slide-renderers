@@ -249,9 +249,21 @@ geometry are locked and are not part of this response.{correction_text}"""
 
 def _default_run(command: list[str]) -> subprocess.CompletedProcess[str]:
     executable = shutil.which(command[0]) or command[0]
-    return subprocess.run(
-        [executable, *command[1:]], capture_output=True, text=True, check=False
-    )
+    launch_command = [executable, *command[1:]]
+    executable_path = Path(executable)
+    if executable_path.suffix.lower() == ".cmd":
+        npm_cli = (
+            executable_path.parent
+            / "node_modules"
+            / "@higgsfield"
+            / "cli"
+            / "bin"
+            / "higgsfield.js"
+        )
+        node = shutil.which("node")
+        if node and npm_cli.is_file():
+            launch_command = [node, str(npm_cli), *command[1:]]
+    return subprocess.run(launch_command, capture_output=True, text=True, check=False)
 
 
 def _default_download(url: str) -> bytes:

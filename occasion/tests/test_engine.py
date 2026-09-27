@@ -191,6 +191,22 @@ class HiggsfieldContractTests(unittest.TestCase):
 
         self.assertEqual(parse_higgsfield_result(payload), "https://cdn.example/image.png")
 
+    def test_result_parser_accepts_create_and_wait_json_responses(self) -> None:
+        output = "\n".join(
+            [
+                json.dumps({"id": "job-1", "status": "queued"}),
+                json.dumps(
+                    {
+                        "id": "job-1",
+                        "status": "completed",
+                        "result_url": "https://cdn.example/final.png",
+                    }
+                ),
+            ]
+        )
+
+        self.assertEqual(parse_higgsfield_result(output), "https://cdn.example/final.png")
+
     def test_result_parser_rejects_non_https_or_incomplete_output(self) -> None:
         with self.assertRaisesRegex(ValueError, "completed HTTPS image"):
             parse_higgsfield_result('{"status":"queued","result_url":"http://bad"}')
