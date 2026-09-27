@@ -14,10 +14,17 @@ HEIGHT = 1350
 SIDE = 72
 BOTTOM = 82
 OVERLAY_START = 560
+_DISPLAY_SEPARATOR_TRANSLATION = str.maketrans(
+    {"•": "-", "·": "-", "—": "-", "–": "-"}
+)
 
 
 class RenderError(ValueError):
     """Raised when an input cannot fit the locked visual contract."""
+
+
+def _display_safe_text(value: str) -> str:
+    return " ".join(value.translate(_DISPLAY_SEPARATOR_TRANSLATION).split())
 
 
 def _colour(value: str) -> tuple[int, int, int]:
@@ -115,9 +122,9 @@ def render_card(
 ) -> dict[str, Any]:
     """Render one 1080x1350 post without mutating the generated background."""
 
-    eyebrow = eyebrow.strip()
-    greeting = greeting.strip()
-    tagline = tagline.strip()
+    eyebrow = _display_safe_text(eyebrow)
+    greeting = _display_safe_text(greeting)
+    tagline = _display_safe_text(tagline)
     if not eyebrow or len(eyebrow) > 56:
         raise RenderError("eyebrow must contain 1-56 characters")
     if not greeting or len(greeting) > 150:
