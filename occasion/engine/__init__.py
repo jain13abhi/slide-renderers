@@ -346,9 +346,18 @@ def parse_higgsfield_result(output: str) -> str:
     """Extract a completed HTTPS result without accepting queued or unsafe output."""
 
     try:
-        payload = json.loads(output)
+        decoder = json.JSONDecoder()
+        remaining = output.lstrip("\ufeff \t\r\n")
+        responses: list[Any] = []
+        while remaining:
+            response, end = decoder.raw_decode(remaining)
+            responses.append(response)
+            remaining = remaining[end:].lstrip(" \t\r\n")
+        if not responses:
+            raise json.JSONDecodeError("empty output", output, 0)
     except json.JSONDecodeError as exc:
         raise ValueError("Higgsfield did not return valid JSON") from exc
+    payload: Any = responses[0] if len(responses) == 1 else responses
     url = _find_result_url(payload)
     parsed = urlparse(url) if url else None
     if not _has_completed_status(payload) or not parsed or parsed.scheme != "https" or not parsed.netloc:
