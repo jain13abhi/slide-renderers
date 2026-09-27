@@ -7,6 +7,7 @@ from pathlib import Path
 from PIL import Image
 
 from occasion.engine import Brand, RendererProfile
+from occasion.engine import renderer as renderer_module
 from occasion.engine.renderer import RenderError, render_card
 
 
@@ -31,6 +32,16 @@ class RendererTests(unittest.TestCase):
 
     def tearDown(self) -> None:
         self.temp.cleanup()
+
+    def test_display_text_normalizes_unsupported_unicode_separators(self) -> None:
+        for separator in ("•", "·", "—", "–"):
+            with self.subTest(separator=separator):
+                self.assertEqual(
+                    renderer_module._display_safe_text(
+                        f"VIJAYADASHAMI {separator} 20 OCTOBER 2026"
+                    ),
+                    "VIJAYADASHAMI - 20 OCTOBER 2026",
+                )
 
     def test_image_led_card_is_exactly_four_by_five_and_preserves_source(self) -> None:
         output = self.root / "card.png"
