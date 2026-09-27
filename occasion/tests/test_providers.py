@@ -172,21 +172,39 @@ class GeminiTests(ProviderTestCase):
 
 
 class HiggsfieldTests(ProviderTestCase):
-    def test_default_runner_resolves_windows_command_shim_before_launch(self) -> None:
+    def test_default_runner_invokes_windows_npm_cli_through_node(self) -> None:
         resolved = r"C:\Users\dockf\AppData\Roaming\npm\higgsfield.cmd"
+        node = r"C:\Program Files\nodejs\node.exe"
+        cli = (
+            r"C:\Users\dockf\AppData\Roaming\npm\node_modules"
+            r"\@higgsfield\cli\bin\higgsfield.js"
+        )
         completed = SimpleNamespace(returncode=0, stdout="ok", stderr="")
 
-        with mock.patch.object(
-            provider_module.shutil, "which", return_value=resolved
-        ) as which, mock.patch.object(
-            provider_module.subprocess, "run", return_value=completed
-        ) as run:
-            result = provider_module._default_run(["higgsfield", "version"])
+        def which(command: str) -> str | None:
+            return {"higgsfield": resolved, "node": node}.get(command)
+
+        with mock.patch.object(provider_module.shutil, "which", side_effect=which), mock.patch.object(
+            provider_module.Path, "is_file", return_value=True
+        ), mock.patch.object(provider_module.subprocess, "run", return_value=completed) as run:
+            result = provider_module._default_run(
+                ["higgsfield", "generate", "create", "nano_banana_2", "--prompt", "line 1\nline 2"]
+            )
 
         self.assertIs(result, completed)
-        which.assert_called_once_with("higgsfield")
         run.assert_called_once_with(
-            [resolved, "version"], capture_output=True, text=True, check=False
+            [
+                node,
+                cli,
+                "generate",
+                "create",
+                "nano_banana_2",
+                "--prompt",
+                "line 1\nline 2",
+            ],
+            capture_output=True,
+            text=True,
+            check=False,
         )
 
     def test_provider_checks_account_generates_once_and_downloads_completed_image(self) -> None:
