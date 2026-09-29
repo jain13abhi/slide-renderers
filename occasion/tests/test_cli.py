@@ -12,7 +12,7 @@ from occasion.engine.cli import main
 class CliTests(unittest.TestCase):
     def test_desktop_written_state_makes_produce_and_deliver_zero_event(self) -> None:
         repository_root = Path(__file__).resolve().parents[2]
-        with tempfile.TemporaryDirectory() as folder:
+        with tempfile.TemporaryDirectory(dir=repository_root.parent) as folder:
             root = Path(folder)
             production_root = root / "production"
             state_root = root / "state"

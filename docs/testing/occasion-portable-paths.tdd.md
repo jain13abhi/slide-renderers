@@ -18,6 +18,8 @@
   file, and idempotent.
 - The production template passes the same output root to produce and deliver.
 - Ubuntu and Windows CI run the complete engine test suite.
+- The pre-existing Windows npm-shim assertion is explicitly Windows-only; all
+  portable engine tests run on both matrix operating systems.
 
 Verification command and result:
 

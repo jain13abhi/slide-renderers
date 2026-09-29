@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import os
 import tempfile
 import unittest
 from datetime import date
@@ -172,6 +173,7 @@ class GeminiTests(ProviderTestCase):
 
 
 class HiggsfieldTests(ProviderTestCase):
+    @unittest.skipUnless(os.name == "nt", "Windows npm shim contract")
     def test_default_runner_invokes_windows_npm_cli_through_node(self) -> None:
         resolved = r"C:\Users\dockf\AppData\Roaming\npm\higgsfield.cmd"
         node = r"C:\Program Files\nodejs\node.exe"

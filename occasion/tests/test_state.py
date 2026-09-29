@@ -89,7 +89,9 @@ class StateTests(unittest.TestCase):
 
             self.assertEqual(snapshot.produced, {"event:2026:brand"})
             self.assertEqual(snapshot.delivered, set())
-            self.assertEqual(pending_delivery(snapshot), [("event:2026:brand", package)])
+            self.assertEqual(
+                pending_delivery(snapshot), [("event:2026:brand", package.resolve())]
+            )
 
     def test_delivery_transition_is_atomic_and_idempotent(self) -> None:
         with tempfile.TemporaryDirectory() as folder:
