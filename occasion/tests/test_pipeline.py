@@ -102,6 +102,22 @@ class PipelineTests(unittest.TestCase):
         marker = self.root / "state" / "dussehra-2026-metaldock.json"
         self.assertTrue(marker.is_file())
         package = json.loads(result.package.read_text(encoding="utf-8"))
+        marker_payload = json.loads(marker.read_text(encoding="utf-8"))
+        self.assertEqual(package["schemaVersion"], 2)
+        self.assertEqual(marker_payload["schemaVersion"], 2)
+        self.assertEqual(
+            marker_payload["package"], "dussehra-2026/packages/metaldock.json"
+        )
+        self.assertEqual(
+            package["artifacts"]["background"],
+            "dussehra-2026/backgrounds/metaldock.png",
+        )
+        self.assertEqual(
+            package["artifacts"]["card"], "dussehra-2026/cards/metaldock.png"
+        )
+        self.assertNotIn("\\", marker_payload["package"])
+        self.assertNotIn("\\", package["artifacts"]["background"])
+        self.assertNotIn("\\", package["artifacts"]["card"])
         self.assertEqual(package["jobKey"], "dussehra:2026:metaldock")
         self.assertEqual(package["draft"]["captions"]["x"], "An X-ready caption without a URL.")
         self.assertEqual(package["sources"], list(self.job.occurrence.sources))

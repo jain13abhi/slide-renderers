@@ -9,6 +9,62 @@ from occasion.engine.state import StateError, load_state, mark_delivered, pendin
 
 
 class StateTests(unittest.TestCase):
+    def test_windows_relative_package_path_resolves_on_any_platform(self) -> None:
+        with tempfile.TemporaryDirectory() as folder:
+            root = Path(folder)
+            legacy_root = root / "slide-renderers"
+            production_root = root / "data" / "occasion" / "production"
+            package = production_root / "dussehra-2026" / "packages" / "dockfinity.json"
+            package.parent.mkdir(parents=True)
+            package.write_text('{"jobKey":"dussehra:2026:dockfinity"}', encoding="utf-8")
+            marker = root / "state" / "dussehra-2026-dockfinity.json"
+            marker.parent.mkdir()
+            marker.write_text(
+                json.dumps(
+                    {
+                        "schemaVersion": 1,
+                        "jobKey": "dussehra:2026:dockfinity",
+                        "status": "generated",
+                        "package": r"..\data\occasion\production\dussehra-2026\packages\dockfinity.json",
+                    }
+                ),
+                encoding="utf-8",
+            )
+
+            snapshot = load_state(
+                marker.parent,
+                production_root=production_root,
+                legacy_root=legacy_root,
+            )
+
+            self.assertEqual(snapshot.packages["dussehra:2026:dockfinity"], package.resolve())
+
+    def test_portable_marker_cannot_escape_production_root(self) -> None:
+        with tempfile.TemporaryDirectory() as folder:
+            root = Path(folder)
+            production_root = root / "production"
+            production_root.mkdir()
+            marker = root / "state" / "unsafe.json"
+            marker.parent.mkdir()
+            marker.write_text(
+                json.dumps(
+                    {
+                        "schemaVersion": 2,
+                        "jobKey": "unsafe:2026:brand",
+                        "status": "generated",
+                        "package": "../outside.json",
+                    }
+                ),
+                encoding="utf-8",
+            )
+
+            with self.assertRaisesRegex(StateError, "outside production root"):
+                load_state(
+                    marker.parent,
+                    production_root=production_root,
+                    legacy_root=root,
+                )
+
     def test_generated_package_is_resumable_without_regeneration(self) -> None:
         with tempfile.TemporaryDirectory() as folder:
             root = Path(folder)

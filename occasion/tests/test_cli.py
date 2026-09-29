@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import os
 import tempfile
 import unittest
 from pathlib import Path
@@ -9,6 +10,63 @@ from occasion.engine.cli import main
 
 
 class CliTests(unittest.TestCase):
+    def test_desktop_written_state_makes_produce_and_deliver_zero_event(self) -> None:
+        repository_root = Path(__file__).resolve().parents[2]
+        with tempfile.TemporaryDirectory() as folder:
+            root = Path(folder)
+            production_root = root / "production"
+            state_root = root / "state"
+            package = production_root / "legacy" / "package.json"
+            package.parent.mkdir(parents=True)
+            package.write_text("{}", encoding="utf-8")
+            state_root.mkdir()
+            windows_relative = os.path.relpath(package, repository_root).replace("/", "\\")
+            for job_key in ("dussehra:2026:dockfinity", "dussehra:2026:metaldock"):
+                marker_name = job_key.replace(":", "-") + ".json"
+                (state_root / marker_name).write_text(
+                    json.dumps(
+                        {
+                            "schemaVersion": 1,
+                            "jobKey": job_key,
+                            "status": "delivered",
+                            "package": windows_relative,
+                        }
+                    ),
+                    encoding="utf-8",
+                )
+            manifest = root / "manifest.json"
+
+            produce_code = main(
+                [
+                    "produce",
+                    "--date",
+                    "2026-10-06",
+                    "--repo-root",
+                    str(repository_root),
+                    "--state-root",
+                    str(state_root),
+                    "--output-root",
+                    str(production_root),
+                    "--manifest",
+                    str(manifest),
+                ]
+            )
+            deliver_code = main(
+                [
+                    "deliver",
+                    "--repo-root",
+                    str(repository_root),
+                    "--state-root",
+                    str(state_root),
+                    "--output-root",
+                    str(production_root),
+                ]
+            )
+
+            self.assertEqual(produce_code, 0)
+            self.assertEqual(deliver_code, 0)
+            self.assertEqual(json.loads(manifest.read_text(encoding="utf-8"))["planned"], [])
+
     def test_dry_run_plans_without_requiring_any_credentials(self) -> None:
         repository_root = Path(__file__).resolve().parents[2]
         with tempfile.TemporaryDirectory() as folder:
