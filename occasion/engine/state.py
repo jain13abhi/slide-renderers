@@ -8,6 +8,8 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
+from .portable_paths import PortablePathError, resolve_persisted_path
+
 
 class StateError(RuntimeError):
     """State is unreadable, so the engine must stop rather than spend twice."""
@@ -40,7 +42,12 @@ def _read_marker(path: Path) -> dict[str, Any]:
     return payload
 
 
-def load_state(root: str | Path) -> StateSnapshot:
+def load_state(
+    root: str | Path,
+    *,
+    production_root: str | Path | None = None,
+    legacy_root: str | Path | None = None,
+) -> StateSnapshot:
     state_root = Path(root)
     if not state_root.exists():
         return StateSnapshot(produced=set(), delivered=set(), markers={}, packages={})
@@ -53,7 +60,18 @@ def load_state(root: str | Path) -> StateSnapshot:
         job_key = payload["jobKey"]
         if job_key in markers:
             raise StateError(f"duplicate state marker for {job_key}")
-        package = Path(payload["package"])
+        schema_version = payload.get("schemaVersion", 1)
+        if not isinstance(schema_version, int):
+            raise StateError(f"state marker {marker.name} has invalid schemaVersion")
+        try:
+            package = resolve_persisted_path(
+                payload["package"],
+                schema_version=schema_version,
+                production_root=production_root,
+                legacy_root=legacy_root,
+            )
+        except PortablePathError as exc:
+            raise StateError(f"state marker {marker.name} has invalid package path: {exc}") from exc
         if not package.is_file():
             raise StateError(f"state marker {marker.name} references missing package {package}")
         produced.add(job_key)

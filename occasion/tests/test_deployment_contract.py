@@ -37,6 +37,9 @@ class DeploymentContractTests(unittest.TestCase):
         delivery_position = self.workflow.index("Deliver package to Telegram")
         self.assertLess(commit_position, delivery_position)
         self.assertIn("notify-failure", self.workflow)
+        self.assertEqual(
+            self.workflow.count("--output-root ../data/occasion/production"), 2
+        )
 
     def test_partial_success_is_archived_and_delivered_without_regeneration(self) -> None:
         self.assertIn("id: archive", self.workflow)

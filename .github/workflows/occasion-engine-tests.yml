@@ -1,0 +1,41 @@
+name: Occasion engine tests
+
+on:
+  pull_request:
+    paths:
+      - "occasion/engine/**"
+      - "occasion/tests/**"
+      - "occasion/deployment/**"
+      - ".github/workflows/occasion-engine-tests.yml"
+  push:
+    branches: [main]
+    paths:
+      - "occasion/engine/**"
+      - "occasion/tests/**"
+      - "occasion/deployment/**"
+      - ".github/workflows/occasion-engine-tests.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+
+      - name: Set up Python
+        uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
+        with:
+          python-version: "3.12"
+
+      - name: Install test dependency
+        run: python -m pip install "Pillow==12.1.1"
+
+      - name: Run occasion engine tests
+        run: python -m unittest discover -s occasion/tests -p "test_*.py"

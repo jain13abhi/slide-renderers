@@ -12,6 +12,7 @@ from typing import Iterator, Sequence
 
 from . import GenerationBudget, Job, load_registry, plan_jobs
 from .pipeline import PipelineError, run_job
+from .migrate_paths import migrate_paths
 from .providers import GeminiDrafter, HiggsfieldProvider
 from .state import load_state, mark_delivered, pending_delivery
 from .telegram import TelegramClient
@@ -66,9 +67,14 @@ def _produce(args: argparse.Namespace) -> int:
         state_root = repo_root / state_root
     if not manifest.is_absolute():
         manifest = repo_root / manifest
+    output_root = Path(args.output_root)
+    if not output_root.is_absolute():
+        output_root = repo_root / output_root
     with _working_directory(repo_root):
         registry = load_registry(registry_path, asset_root=repo_root)
-        snapshot = load_state(state_root)
+        snapshot = load_state(
+            state_root, production_root=output_root, legacy_root=repo_root
+        )
         jobs = plan_jobs(
             registry,
             as_of=date.fromisoformat(args.date),
@@ -92,7 +98,6 @@ def _produce(args: argparse.Namespace) -> int:
             model=os.environ.get("HIGGSFIELD_MODEL", "nano_banana_2"),
             resolution=os.environ.get("HIGGSFIELD_RESOLUTION", "2k"),
         )
-        output_root = Path(args.output_root)
         produced: list[str] = []
         errors: list[str] = []
         for job in jobs:
@@ -119,8 +124,13 @@ def _deliver(args: argparse.Namespace) -> int:
     state_root = Path(args.state_root)
     if not state_root.is_absolute():
         state_root = repo_root / state_root
+    output_root = Path(args.output_root)
+    if not output_root.is_absolute():
+        output_root = repo_root / output_root
     with _working_directory(repo_root):
-        snapshot = load_state(state_root)
+        snapshot = load_state(
+            state_root, production_root=output_root, legacy_root=repo_root
+        )
         pending = pending_delivery(snapshot)
         if not pending:
             print("Occasion delivery: nothing pending.")
@@ -129,7 +139,11 @@ def _deliver(args: argparse.Namespace) -> int:
         errors: list[str] = []
         for job_key, package in pending:
             try:
-                telegram.deliver(package)
+                telegram.deliver(
+                    package,
+                    production_root=output_root,
+                    legacy_root=repo_root,
+                )
                 mark_delivered(snapshot.markers[job_key])
                 print(f"Delivered {job_key}")
             except Exception as exc:
@@ -144,6 +158,28 @@ def _notify_failure(args: argparse.Namespace) -> int:
     if args.detail_file:
         detail = Path(args.detail_file).read_text(encoding="utf-8", errors="replace")
     _telegram_from_environment().send_failure(stage=args.stage, detail=detail)
+    return 0
+
+
+def _migrate_paths(args: argparse.Namespace) -> int:
+    repo_root = Path(args.repo_root).resolve()
+    state_root = Path(args.state_root)
+    output_root = Path(args.output_root)
+    if not state_root.is_absolute():
+        state_root = repo_root / state_root
+    if not output_root.is_absolute():
+        output_root = repo_root / output_root
+    result = migrate_paths(
+        state_root=state_root,
+        production_root=output_root,
+        legacy_root=repo_root,
+        write=args.write,
+    )
+    mode = "wrote" if args.write else "would change"
+    print(
+        f"Occasion path migration inspected {result.inspected} marker(s); "
+        f"{mode} {result.changed}."
+    )
     return 0
 
 
@@ -166,7 +202,21 @@ def _parser() -> argparse.ArgumentParser:
     deliver = subparsers.add_parser("deliver", help="send generated packages to Telegram")
     deliver.add_argument("--repo-root", default=default_repo)
     deliver.add_argument("--state-root", default="occasion/state")
+    deliver.add_argument("--output-root", default="occasion/production")
     deliver.set_defaults(handler=_deliver)
+
+    migrate = subparsers.add_parser(
+        "migrate-paths", help="preview or write portable occasion state paths"
+    )
+    migrate.add_argument("--repo-root", default=default_repo)
+    migrate.add_argument("--state-root", default="occasion/state")
+    migrate.add_argument("--output-root", default="occasion/production")
+    migrate.add_argument(
+        "--write",
+        action="store_true",
+        help="write changes; without this flag the command is a dry run",
+    )
+    migrate.set_defaults(handler=_migrate_paths)
 
     failure = subparsers.add_parser("notify-failure", help="send a failure to Telegram")
     failure.add_argument("--stage", required=True)

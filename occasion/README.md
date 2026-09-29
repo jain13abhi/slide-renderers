@@ -75,12 +75,29 @@ Run these from the repository root:
 ```bash
 python3 -m occasion.engine produce --date 2026-10-06 --dry-run
 python3 -m occasion.engine produce --date 2026-10-06
-python3 -m occasion.engine deliver
+python3 -m occasion.engine deliver --output-root occasion/production
 python3 -m occasion.engine notify-failure --stage preflight --detail "example"
 ```
 
 The default lead time is 14 days. Production files are written beneath
 `occasion/production/`; resumable markers live beneath `occasion/state/`.
+
+Generated schema-v2 markers and packages store paths relative to the production
+root with `/` separators, regardless of the runner operating system. Readers
+remain compatible with schema-v1 desktop markers containing `\` separators.
+Both `produce` and `deliver` must receive the same `--output-root` whenever a
+non-default production directory is used.
+
+The optional path migration is dry-run only unless `--write` is supplied:
+
+```bash
+python3 -m occasion.engine migrate-paths \
+  --state-root ../data/occasion/state \
+  --output-root ../data/occasion/production
+```
+
+Review the preview before explicitly adding `--write`. Normal production does
+not require migration because legacy paths are read tolerantly.
 
 Required production environment variables:
 

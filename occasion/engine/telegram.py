@@ -9,6 +9,8 @@ from pathlib import Path
 from typing import Any, Callable, Mapping
 from urllib import parse, request
 
+from .portable_paths import PortablePathError, resolve_persisted_path
+
 
 class TelegramError(RuntimeError):
     """Telegram rejected or could not receive a production result."""
@@ -131,7 +133,13 @@ class TelegramClient:
                 )
             )
 
-    def deliver(self, package_path: str | Path) -> None:
+    def deliver(
+        self,
+        package_path: str | Path,
+        *,
+        production_root: str | Path | None = None,
+        legacy_root: str | Path | None = None,
+    ) -> None:
         package_path = Path(package_path)
         try:
             package = json.loads(package_path.read_text(encoding="utf-8"))
@@ -143,7 +151,18 @@ class TelegramClient:
         if not all(isinstance(item, Mapping) for item in (event, brand, artifacts)):
             raise TelegramError("delivery package metadata is incomplete")
         card_value = artifacts.get("card")
-        card = Path(card_value) if isinstance(card_value, str) else None
+        schema_version = package.get("schemaVersion", 1)
+        card = None
+        if isinstance(card_value, str) and isinstance(schema_version, int):
+            try:
+                card = resolve_persisted_path(
+                    card_value,
+                    schema_version=schema_version,
+                    production_root=production_root,
+                    legacy_root=legacy_root,
+                )
+            except PortablePathError as exc:
+                raise TelegramError(f"delivery card path is invalid: {exc}") from exc
         if card is None or not card.is_file():
             raise TelegramError("delivery card is missing")
         caption = f"{brand.get('name')} · {event.get('name')} · {event.get('date')}"
