@@ -108,6 +108,7 @@ jobs:
           $ErrorActionPreference = 'Continue'
           python -m occasion.engine deliver `
             --state-root ../data/occasion/state `
+            --output-root ../data/occasion/production `
             2>&1 | Tee-Object -FilePath ../occasion-error.log -Append
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 

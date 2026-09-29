@@ -40,6 +40,50 @@ def package_fixture(root: Path) -> Path:
 
 
 class TelegramTests(unittest.TestCase):
+    def test_delivery_accepts_legacy_windows_card_path(self) -> None:
+        calls: list[tuple[str, dict, Path | None]] = []
+
+        def transport(method: str, fields: dict, file: Path | None):
+            calls.append((method, fields, file))
+            return {"ok": True}
+
+        with tempfile.TemporaryDirectory() as folder:
+            root = Path(folder)
+            legacy_root = root / "slide-renderers"
+            production_root = root / "data" / "occasion" / "production"
+            card = production_root / "dussehra-2026" / "cards" / "metaldock.png"
+            card.parent.mkdir(parents=True)
+            Image.new("RGB", (1080, 1350), "#223344").save(card)
+            package = production_root / "dussehra-2026" / "packages" / "metaldock.json"
+            package.parent.mkdir(parents=True)
+            package.write_text(
+                json.dumps(
+                    {
+                        "schemaVersion": 1,
+                        "jobKey": "dussehra:2026:metaldock",
+                        "event": {
+                            "id": "dussehra",
+                            "name": "Dussehra / Vijayadashami",
+                            "date": "2026-10-20",
+                        },
+                        "brand": {"id": "metaldock", "name": "Metal Dock"},
+                        "draft": {"captions": {"x": "X copy"}},
+                        "artifacts": {
+                            "card": r"..\data\occasion\production\dussehra-2026\cards\metaldock.png"
+                        },
+                    }
+                ),
+                encoding="utf-8",
+            )
+
+            TelegramClient(token="token", chat_id="chat", transport=transport).deliver(
+                package,
+                production_root=production_root,
+                legacy_root=legacy_root,
+            )
+
+        self.assertEqual(calls[0][2], card.resolve())
+
     def test_delivery_messages_are_copy_ready_and_platform_separated(self) -> None:
         with tempfile.TemporaryDirectory() as folder:
             package = json.loads(package_fixture(Path(folder)).read_text(encoding="utf-8"))

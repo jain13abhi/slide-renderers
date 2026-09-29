@@ -10,6 +10,7 @@ from pathlib import Path
 from typing import Any, Mapping, Protocol
 
 from . import Job
+from .portable_paths import CURRENT_PATH_SCHEMA, portable_relative
 from .renderer import RenderError, render_card
 
 
@@ -148,7 +149,7 @@ def run_job(
 
     generated_at = datetime.now(timezone.utc).replace(microsecond=0).isoformat()
     package_payload = {
-        "schemaVersion": 1,
+        "schemaVersion": CURRENT_PATH_SCHEMA,
         "jobKey": job.key,
         "event": {
             "id": job.event.id,
@@ -161,18 +162,18 @@ def run_job(
         "sources": list(job.occurrence.sources),
         "draft": draft.as_dict(),
         "artifacts": {
-            "background": str(background),
-            "card": str(card),
+            "background": portable_relative(background, root=output_root),
+            "card": portable_relative(card, root=output_root),
             "renderMetrics": metrics,
         },
         "generatedAt": generated_at,
     }
     _write_json_atomic(package, package_payload)
     marker_payload = {
-        "schemaVersion": 1,
+        "schemaVersion": CURRENT_PATH_SCHEMA,
         "jobKey": job.key,
         "status": "generated",
-        "package": str(package),
+        "package": portable_relative(package, root=output_root),
         "generatedAt": generated_at,
     }
     _write_json_atomic(marker, marker_payload)
