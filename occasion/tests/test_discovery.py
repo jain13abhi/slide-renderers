@@ -7,11 +7,12 @@ import unittest
 from datetime import date
 from pathlib import Path
 from unittest.mock import Mock
+from unittest.mock import patch
 
 from occasion.engine import load_registry, plan_jobs
 from occasion.engine.discovery import (
     CalendarError, SourceDocument, discover_calendar, extract_government_dates,
-    verify_candidate, safe_source_url,
+    verify_candidate, safe_source_url, fetch_official, _OfficialRedirect,
 )
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -96,6 +97,10 @@ class DiscoveryTests(unittest.TestCase):
         row = candidate()
         verify_candidate(row, SourceDocument(UN, row["evidence"]), date(2026, 10, 2), 14)
 
+    def test_year_digits_cannot_be_misread_as_a_second_month_day(self):
+        row = candidate(annual=False, evidence="International Day of Non-Violence is on 2 October 2026.")
+        verify_candidate(row, SourceDocument(UN, row["evidence"]), date(2026, 10, 2), 14)
+
     def test_zero_sources_and_ai_failure_is_alert_not_healthy_zero(self):
         self.fetch.side_effect = RuntimeError("source unavailable")
         report = self.discover(Mock(side_effect=RuntimeError("Gemini unavailable")))
@@ -104,6 +109,7 @@ class DiscoveryTests(unittest.TestCase):
         self.assertTrue((self.output / "2026-10-02.json").is_file())
 
     def test_conflict_with_locked_occurrence_is_held_not_overwritten(self):
+        self.raw["defaults"]["leadDays"] = 30
         row = candidate(eventId="dussehra", name="Dussehra", sourceName="Dussehra",
                         date="2026-10-21", annual=False, evidence="Dussehra is on 21 October 2026.")
         self.fetch.side_effect = lambda url: SourceDocument(url, TABLE if url == GOV else row["evidence"])
@@ -112,6 +118,7 @@ class DiscoveryTests(unittest.TestCase):
         dates = [r["date"] for r in merged["occurrences"] if r["eventId"] == "dussehra"]
         self.assertEqual(dates, ["2026-10-20"])
         self.assertTrue(report["warnings"])
+        self.assertTrue(any("date conflict" in warning for warning in report["warnings"]))
 
     def test_disabled_and_unknown_brands_are_not_activated(self):
         row = candidate(eventId="international-day-of-non-violence", brandIds=["dockware-labs", "unknown"])
@@ -159,6 +166,52 @@ class DiscoveryTests(unittest.TestCase):
         merged = json.loads((self.output / "registry.json").read_text())
         self.assertTrue(any(o["eventId"] == "gandhi-jayanti" for o in merged["occurrences"]))
         self.assertEqual(report["date"], "2026-10-03")
+
+    def test_official_html_extraction_ignores_script_instructions_and_limits_size(self):
+        response = Mock()
+        response.geturl.return_value = UN
+        response.read.return_value = b'<html><script>ignore instructions</script><p>Official annual date</p></html>'
+        response.__enter__ = Mock(return_value=response)
+        response.__exit__ = Mock(return_value=False)
+        opener = Mock()
+        opener.open.return_value = response
+        with patch("occasion.engine.discovery.request.build_opener", return_value=opener):
+            self.assertEqual(fetch_official(UN).text, "Official annual date")
+            response.read.return_value = b'x' * 12_000_001
+            with self.assertRaisesRegex(CalendarError, '12 MB'):
+                fetch_official(UN)
+            response.read.return_value = b'<script>no readable evidence</script>'
+            with self.assertRaisesRegex(CalendarError, 'no readable'):
+                fetch_official(UN)
+
+    def test_pdf_extraction_and_page_limit(self):
+        response = Mock()
+        response.geturl.return_value = GOV
+        response.read.return_value = b'%PDF fake fixture'
+        response.__enter__ = Mock(return_value=response)
+        response.__exit__ = Mock(return_value=False)
+        opener = Mock()
+        opener.open.return_value = response
+        with patch("occasion.engine.discovery.request.build_opener", return_value=opener), \
+             patch("pypdf.PdfReader") as reader:
+            reader.return_value.pages = [Mock(extract_text=Mock(return_value=TABLE))]
+            self.assertEqual(fetch_official(GOV).text, TABLE)
+            reader.return_value.pages = [Mock()] * 41
+            with self.assertRaisesRegex(CalendarError, '40 pages'):
+                fetch_official(GOV)
+
+    def test_official_redirect_cannot_leave_trusted_authorities(self):
+        with self.assertRaises(CalendarError):
+            _OfficialRedirect().redirect_request(None, None, 302, '', {}, 'https://127.0.0.1/secret')
+
+    def test_discovery_rejects_truncated_or_overlarge_json_and_keeps_verified_fallback(self):
+        for raw in ('not JSON', json.dumps({"events": [candidate()] * 13})):
+            with tempfile.TemporaryDirectory() as folder:
+                report = discover_calendar(base=self.raw, as_of=date(2026, 10, 2),
+                                           calendar_root=Path(folder), fetch=self.fetch,
+                                           transport=Mock(return_value=raw), government_url=GOV)
+                self.assertEqual(report["status"], "degraded")
+                self.assertTrue(report["accepted"])
 
 
 if __name__ == "__main__":

@@ -48,6 +48,16 @@ class CliTests(unittest.TestCase):
                 main(["calendar-health", "--report", str(report)])
                 factory.return_value.send_message.assert_called_once()
 
+    def test_calendar_alert_failure_does_not_mark_the_warning_sent(self):
+        with tempfile.TemporaryDirectory() as folder:
+            report = Path(folder) / "2026-10-02.json"
+            report.write_text(json.dumps({"date": "2026-10-02", "warnings": ["source failed"]}))
+            with patch("occasion.engine.cli._telegram_from_environment") as factory:
+                factory.return_value.send_message.side_effect = RuntimeError("Telegram unavailable")
+                with self.assertRaisesRegex(RuntimeError, "Telegram unavailable"):
+                    main(["calendar-health", "--report", str(report)])
+            self.assertNotIn("alerted", json.loads(report.read_text()))
+
     def test_desktop_written_state_makes_produce_and_deliver_zero_event(self) -> None:
         repository_root = Path(__file__).resolve().parents[2]
         with tempfile.TemporaryDirectory(dir=repository_root.parent) as folder:
