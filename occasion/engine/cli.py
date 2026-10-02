@@ -16,6 +16,7 @@ from .migrate_paths import migrate_paths
 from .providers import GeminiDrafter, HiggsfieldProvider
 from .state import load_state, mark_delivered, pending_delivery
 from .telegram import TelegramClient
+from . import discovery
 
 
 @contextmanager
@@ -28,7 +29,7 @@ def _working_directory(path: Path) -> Iterator[None]:
         os.chdir(previous)
 
 
-def _write_manifest(path: Path, *, planned: list[Job], produced: list[str], errors: list[str]) -> None:
+def _write_manifest(path: Path, *, planned: list[Job], produced: list[str], errors: list[str], deferred: int = 0) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     payload = {
         "schemaVersion": 1,
@@ -43,6 +44,7 @@ def _write_manifest(path: Path, *, planned: list[Job], produced: list[str], erro
         ],
         "produced": produced,
         "errors": errors,
+        "deferred": deferred,
     }
     temporary = path.with_suffix(path.suffix + ".tmp")
     temporary.write_text(json.dumps(payload, indent=2) + "\n", encoding="utf-8")
@@ -80,12 +82,16 @@ def _produce(args: argparse.Namespace) -> int:
             as_of=date.fromisoformat(args.date),
             completed=snapshot.produced,
         )
-        if len(jobs) > args.max_jobs:
+        deferred = max(0, len(jobs) - args.max_jobs)
+        if deferred and not args.batch:
             raise RuntimeError(
                 f"occasion job limit exceeded: {len(jobs)} planned, maximum {args.max_jobs}"
             )
+        if deferred:
+            jobs = jobs[:args.max_jobs]
+            print(f"Deferred {deferred} occasion job(s) to the next scheduled batch.")
         if args.dry_run or not jobs:
-            _write_manifest(manifest, planned=jobs, produced=[], errors=[])
+            _write_manifest(manifest, planned=jobs, produced=[], errors=[], deferred=deferred)
             print(f"Occasion plan: {len(jobs)} job(s); no external calls made.")
             return 0
 
@@ -113,7 +119,7 @@ def _produce(args: argparse.Namespace) -> int:
                 print(f"Produced {job.key}")
             except Exception as exc:
                 errors.append(f"{job.key}: {exc}")
-        _write_manifest(manifest, planned=jobs, produced=produced, errors=errors)
+        _write_manifest(manifest, planned=jobs, produced=produced, errors=errors, deferred=deferred)
         if errors:
             raise PipelineError("; ".join(errors))
         return 0
@@ -161,6 +167,47 @@ def _notify_failure(args: argparse.Namespace) -> int:
     return 0
 
 
+def _discover(args: argparse.Namespace) -> int:
+    root = Path(args.repo_root).resolve()
+    registry_path = Path(args.registry)
+    if not registry_path.is_absolute():
+        registry_path = root / registry_path
+    calendar_root = Path(args.calendar_root)
+    if not calendar_root.is_absolute():
+        calendar_root = root / calendar_root
+    load_registry(registry_path, asset_root=root)
+
+    def transport(body):
+        # Exactly one HTTP model attempt; no multiplied outer/provider retries.
+        return GeminiDrafter(api_key=os.environ.get("GEMINI_API_KEY"),
+                             model=os.environ.get("GEMINI_MODEL", "gemini-3.5-flash-lite"),
+                             retry_attempts=1).research_calendar(body)
+
+    report = discovery.discover_calendar(
+        base=json.loads(registry_path.read_text(encoding="utf-8")),
+        as_of=date.fromisoformat(args.date), calendar_root=calendar_root,
+        fetch=discovery.fetch_official, transport=transport)
+    load_registry(calendar_root / "registry.json", asset_root=root)
+    print(f"Calendar discovery: {report['status']}; {len(report['accepted'])} verified occurrence(s).")
+    for warning in report["warnings"]:
+        print(f"Calendar warning: {warning}")
+    return 0
+
+
+def _calendar_health(args: argparse.Namespace) -> int:
+    path = Path(args.report)
+    report = json.loads(path.read_text(encoding="utf-8"))
+    warnings = report.get("warnings", [])
+    if warnings and not report.get("alerted"):
+        _telegram_from_environment().send_message(
+            "OCCASION CALENDAR INCOMPLETE\n\nDate: " + report["date"]
+            + "\nVerified packages can continue; discovery is not fully healthy.\n\n"
+            + "\n".join(warnings)[:2800])
+        report["alerted"] = True
+        discovery._write(path, report)
+    return 0
+
+
 def _migrate_paths(args: argparse.Namespace) -> int:
     repo_root = Path(args.repo_root).resolve()
     state_root = Path(args.state_root)
@@ -196,8 +243,20 @@ def _parser() -> argparse.ArgumentParser:
     produce.add_argument("--output-root", default="occasion/production")
     produce.add_argument("--manifest", default="occasion/production/manifest.json")
     produce.add_argument("--max-jobs", type=int, default=6)
+    produce.add_argument("--batch", action="store_true", help="defer excess jobs instead of aborting the whole plan")
     produce.add_argument("--dry-run", action="store_true")
     produce.set_defaults(handler=_produce)
+
+    discover = subparsers.add_parser("discover", help="identify and source-verify today's and upcoming occasions")
+    discover.add_argument("--date", required=True)
+    discover.add_argument("--repo-root", default=default_repo)
+    discover.add_argument("--registry", default="occasion/registry.json")
+    discover.add_argument("--calendar-root", required=True)
+    discover.set_defaults(handler=_discover)
+
+    health = subparsers.add_parser("calendar-health", help="alert once if daily discovery is incomplete")
+    health.add_argument("--report", required=True)
+    health.set_defaults(handler=_calendar_health)
 
     deliver = subparsers.add_parser("deliver", help="send generated packages to Telegram")
     deliver.add_argument("--repo-root", default=default_repo)
