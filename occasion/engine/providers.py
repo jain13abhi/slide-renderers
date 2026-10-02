@@ -139,6 +139,10 @@ class GeminiDrafter:
 
         return send
 
+    def research_calendar(self, body: dict[str, Any]) -> str:
+        """Use the same authenticated transport for the bounded discovery adapter."""
+        return self._transport(body)
+
     @staticmethod
     def _research_prompt(job: Job) -> str:
         sources = "\n".join(f"- {url}" for url in job.occurrence.sources)
