@@ -151,6 +151,15 @@ class DiscoveryTests(unittest.TestCase):
         self.fetch.side_effect = lambda url: SourceDocument(url, "site maintenance")
         self.assertEqual(self.discover()["status"], "degraded")
 
+    def test_discovered_occurrences_survive_next_day_without_reidentification(self):
+        self.discover()
+        report = discover_calendar(base=self.raw, as_of=date(2026, 10, 3),
+                                   calendar_root=self.output, fetch=self.fetch,
+                                   transport=Mock(return_value='{"events":[]}'), government_url=GOV)
+        merged = json.loads((self.output / "registry.json").read_text())
+        self.assertTrue(any(o["eventId"] == "gandhi-jayanti" for o in merged["occurrences"]))
+        self.assertEqual(report["date"], "2026-10-03")
+
 
 if __name__ == "__main__":
     unittest.main()

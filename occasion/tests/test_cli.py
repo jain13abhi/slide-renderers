@@ -5,11 +5,49 @@ import os
 import tempfile
 import unittest
 from pathlib import Path
+from unittest.mock import Mock, patch
 
 from occasion.engine.cli import main
 
 
 class CliTests(unittest.TestCase):
+    def test_discover_cli_archives_report_and_produce_uses_its_calendar(self):
+        root = Path(__file__).resolve().parents[2]
+        from occasion.engine.discovery import SourceDocument
+        with tempfile.TemporaryDirectory() as folder:
+            calendar = Path(folder) / "calendar"
+            doc = SourceDocument("https://www.surveyofindia.gov.in/UserFiles/files/list%20of%20holidays-2026.pdf",
+                                 "GAZETTED HOLIDAYS DURING THE YEAR 2026\n13. Mahatma Gandhi's Birthday October, 02 Asvina 10 Friday")
+            with patch("occasion.engine.discovery.fetch_official", return_value=doc), \
+                 patch("occasion.engine.cli.GeminiDrafter") as drafter:
+                drafter.return_value.research_calendar.return_value = '{"events":[]}'
+                code = main(["discover", "--date", "2026-10-02", "--repo-root", str(root),
+                             "--calendar-root", str(calendar)])
+            self.assertEqual(code, 0)
+            manifest = Path(folder) / "manifest.json"
+            self.assertEqual(main(["produce", "--date", "2026-10-02", "--repo-root", str(root),
+                                   "--registry", str(calendar / "registry.json"), "--dry-run",
+                                   "--state-root", str(Path(folder) / "state"), "--manifest", str(manifest)]), 0)
+            self.assertEqual(len(json.loads(manifest.read_text())["planned"]), 3)
+
+    def test_batch_mode_defers_excess_jobs_instead_of_aborting_all(self):
+        root = Path(__file__).resolve().parents[2]
+        with tempfile.TemporaryDirectory() as folder:
+            manifest = Path(folder) / "manifest.json"
+            self.assertEqual(main(["produce", "--date", "2026-10-06", "--repo-root", str(root),
+                                   "--max-jobs", "1", "--batch", "--dry-run",
+                                   "--state-root", str(Path(folder) / "state"), "--manifest", str(manifest)]), 0)
+            self.assertEqual(len(json.loads(manifest.read_text())["planned"]), 1)
+
+    def test_degraded_calendar_alert_is_sent_once_and_retained_on_failure(self):
+        with tempfile.TemporaryDirectory() as folder:
+            report = Path(folder) / "2026-10-02.json"
+            report.write_text(json.dumps({"date": "2026-10-02", "warnings": ["source failed"]}))
+            with patch("occasion.engine.cli._telegram_from_environment") as factory:
+                main(["calendar-health", "--report", str(report)])
+                main(["calendar-health", "--report", str(report)])
+                factory.return_value.send_message.assert_called_once()
+
     def test_desktop_written_state_makes_produce_and_deliver_zero_event(self) -> None:
         repository_root = Path(__file__).resolve().parents[2]
         with tempfile.TemporaryDirectory(dir=repository_root.parent) as folder:
