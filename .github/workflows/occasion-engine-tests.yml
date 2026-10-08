@@ -4,6 +4,8 @@ on:
   pull_request:
     paths:
       - "occasion/engine/**"
+      - "occasion/registry.json"
+      - "occasion/requirements.txt"
       - "occasion/tests/**"
       - "occasion/deployment/**"
       - ".github/workflows/occasion-engine-tests.yml"
@@ -11,6 +13,8 @@ on:
     branches: [main]
     paths:
       - "occasion/engine/**"
+      - "occasion/registry.json"
+      - "occasion/requirements.txt"
       - "occasion/tests/**"
       - "occasion/deployment/**"
       - ".github/workflows/occasion-engine-tests.yml"
@@ -35,7 +39,7 @@ jobs:
           python-version: "3.12"
 
       - name: Install test dependency
-        run: python -m pip install "Pillow==12.1.1"
+        run: python -m pip install -r occasion/requirements.txt
 
       - name: Run occasion engine tests
         run: python -m unittest discover -s occasion/tests -p "test_*.py"

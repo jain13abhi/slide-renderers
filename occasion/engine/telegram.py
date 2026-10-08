@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import hashlib
 import mimetypes
 import uuid
 from pathlib import Path
@@ -84,6 +85,7 @@ class TelegramClient:
         if not token or not chat_id:
             raise TelegramError("Telegram token and chat id are required")
         self.chat_id = chat_id
+        self.destination_context = token.split(":", 1)[0] + "|" + chat_id
         self.timeout_seconds = timeout_seconds
         self.transport = transport or self._http_transport(token)
 
@@ -111,7 +113,7 @@ class TelegramClient:
                 with request.urlopen(req, timeout=self.timeout_seconds) as response:
                     payload = json.loads(response.read().decode("utf-8"))
             except Exception as exc:
-                raise TelegramError(f"Telegram request failed: {exc}") from exc
+                raise TelegramError("Telegram network/timeout failure; acceptance unknown, inspect before retrying") from None
             if not isinstance(payload, Mapping):
                 raise TelegramError("Telegram response was not an object")
             return payload
@@ -166,13 +168,32 @@ class TelegramClient:
         if card is None or not card.is_file():
             raise TelegramError("delivery card is missing")
         caption = f"{brand.get('name')} · {event.get('name')} · {event.get('date')}"
-        self._check(
-            self.transport(
-                "sendPhoto", {"chat_id": self.chat_id, "caption": caption[:1024]}, card
-            )
-        )
+        receipt_path = package_path.with_suffix(".telegram.json")
+        context = hashlib.sha256((self.destination_context + json.dumps(package, sort_keys=True)).encode() + card.read_bytes()).hexdigest()
+        receipt = json.loads(receipt_path.read_text()) if receipt_path.exists() else {}
+        if receipt.get("contextHash") != context:
+            receipt = {"contextHash": context, "messages": {}}
+        messages = receipt.get("messages")
+        if not isinstance(messages, dict) or any(not isinstance(v, int) or isinstance(v, bool) or v < 1 for v in messages.values()):
+            raise TelegramError("invalid cached Telegram message receipts")
+
+        def confirmed(method, fields, file):
+            key = hashlib.sha256((method + json.dumps(fields, sort_keys=True)).encode()).hexdigest()
+            if key in messages:
+                return
+            payload = self.transport(method, fields, file)
+            self._check(payload)
+            message_id = payload.get("result", {}).get("message_id")
+            if not isinstance(message_id, int) or isinstance(message_id, bool) or message_id < 1:
+                raise TelegramError("Telegram response has no confirmed message receipt")
+            messages[key] = message_id
+            temporary = receipt_path.with_suffix(".tmp")
+            temporary.write_text(json.dumps(receipt, indent=2) + "\n", encoding="utf-8")
+            temporary.replace(receipt_path)
+
+        confirmed("sendPhoto", {"chat_id": self.chat_id, "caption": caption[:1024]}, card)
         for message in delivery_messages(package):
-            self.send_message(message)
+            confirmed("sendMessage", {"chat_id": self.chat_id, "text": message, "disable_web_page_preview": "true"}, None)
 
     def send_failure(self, *, stage: str, detail: str) -> None:
         self.send_message(f"OCCASION PIPELINE FAILED\n\nStage: {stage}\n\n{detail[:3500]}")

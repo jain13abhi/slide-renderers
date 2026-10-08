@@ -14,7 +14,7 @@ Apps Script (primary IST clock)
 private GitHub orchestration repository
         |
         v
-always-on Windows desktop self-hosted runner
+private self-hosted runner (Linux VPS; Windows fallback)
   Gemini: grounded research + structured copy
   Higgsfield CLI: text-free 4:5 background image
   deterministic renderer: locked logo, colour, type, spacing
@@ -31,7 +31,7 @@ repository; never attach it to this public repository.
 
 This design uses the Higgsfield account subscription through its official CLI.
 It does not use the separately billed Higgsfield API. The only unavoidable
-interactive step is the initial `higgsfield auth login` on the desktop, and again
+interactive step is the initial `higgsfield auth login` for the runner account, and again
 if that account session expires.
 
 ## Safety and autonomy rules
@@ -115,27 +115,28 @@ HIGGSFIELD_MODEL=nano_banana_2
 HIGGSFIELD_RESOLUTION=2k
 ```
 
-Higgsfield authentication is stored by the CLI on the desktop and is deliberately
+Higgsfield authentication is stored by the CLI in the runner account and is deliberately
 not copied into GitHub secrets or this repository.
 
 ## One-time deployment
 
 1. Create a private GitHub repository for orchestration, for example
    `dock-content-engine`.
-2. Copy `deployment/occasion-production.yml` into that private repository as
-   `.github/workflows/occasion-production.yml`.
-3. On the always-on Windows desktop, install Python 3, Pillow, Git, Node.js, and the official
-   Higgsfield CLI. Run `higgsfield auth login` and confirm
-   `higgsfield account status --json` succeeds.
-4. Register that desktop as a self-hosted runner for the private orchestration
-   repository with labels `self-hosted`, `windows`, `x64`, and
-   `dock-content-desktop`. Run it continuously under the same Windows account
-   that owns the Higgsfield login.
+2. Use the dispatcher and platform-specific reusable workflows maintained in
+   `dock-content-engine`. Its engine checkout must pin the reviewed commit SHA.
+3. Prepare the approved non-root Linux runner account, its pinned dependencies,
+   and Higgsfield login using the operator runbook. Verify
+   `higgsfield account status --json` without displaying credentials.
+4. Register the repo-scoped runner with `self-hosted`, `linux`, `x64`, and
+   `dock-content-vps`. Keep the existing `dock-content-desktop` runner as a
+   rollback option until an explicitly approved cutover succeeds.
 5. Add the three private-repository secrets listed below.
 6. Deploy the updated Apps Script bridge and set the two optional occasion
    properties listed below.
-7. Run a workflow dispatch using `--dry-run` first, then run one controlled
-   production job and verify the resulting Telegram package.
+7. Run the CLI's `produce --dry-run` locally with fixtures first. The production
+   workflow has no dry-run input: a manual dispatch is a real production run
+   and needs separate approval. Verify a controlled run's archive and Telegram
+   acceptance before declaring deployment complete.
 
 Private orchestration repository secrets:
 
@@ -168,12 +169,30 @@ makes deployment fail-safe and leaves the existing daily briefs untouched.
   Ambiguous commands are not retried automatically.
 - **Render/package failure:** no generated marker is written.
 - **Git archive failure:** Telegram delivery does not begin, preserving the
-  recoverable package on the desktop workspace.
+  recoverable package on the runner workspace.
 - **Telegram failure:** the generated marker remains pending. The next run sends
-  the same card and captions without another Gemini or Higgsfield generation.
+  the same package without another Gemini or Higgsfield generation. Confirmed
+  photo/caption message IDs are archived in a private per-package receipt and
+  skipped on retry. An ambiguous timeout before receipt persistence still
+  requires checking Telegram; this is not an exactly-once guarantee.
 - **Corrupt state:** execution fails closed instead of risking duplicate spend.
 
 The existing `occasions.json`, `render-posts.py`, and manual assets remain a
 legacy recovery path. Once this engine is deployed, `registry.json` is the
 production source of truth.
+
+## Calendar discovery and health
+
+The discovery integration is staged in renderer PR #21 and private-engine
+PR #7; these changes are not live merely because this branch documents them.
+Before production, merge the reviewed renderer commit and pin that exact SHA
+in both reusable workflows.
+
+Discovery checks today through the next 14 days, verifies candidate dates
+against approved official sources, and binds names/source evidence to canonical
+event IDs before applying brand and approval policies. Legacy generated calendar
+rows are rebuilt from verified sources rather than trusted across policy changes.
+Calendar warnings return a nonzero health result after verified packages have
+been produced/delivered; incomplete coverage cannot appear as a clean zero-job
+success. Source availability and complete worldwide coverage are not guaranteed.
 
