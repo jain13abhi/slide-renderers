@@ -44,8 +44,8 @@ class CliTests(unittest.TestCase):
             report = Path(folder) / "2026-10-02.json"
             report.write_text(json.dumps({"date": "2026-10-02", "warnings": ["source failed"]}))
             with patch("occasion.engine.cli._telegram_from_environment") as factory:
-                main(["calendar-health", "--report", str(report)])
-                main(["calendar-health", "--report", str(report)])
+                self.assertEqual(main(["calendar-health", "--report", str(report)]), 1)
+                self.assertEqual(main(["calendar-health", "--report", str(report)]), 1)
                 factory.return_value.send_message.assert_called_once()
 
     def test_calendar_alert_failure_does_not_mark_the_warning_sent(self):

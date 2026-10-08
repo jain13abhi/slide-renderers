@@ -145,6 +145,47 @@ class DiscoveryTests(unittest.TestCase):
                       plan_jobs(registry, as_of=date(2026, 10, 2), completed=[])])
         self.assertEqual(report["aiAttempts"], 1)
 
+    def test_existing_id_cannot_be_locked_using_an_unrelated_official_event(self):
+        row = candidate(eventId="vishwakarma-puja", name="World Teachers' Day",
+                        sourceName="World Teachers' Day", date="2026-10-05",
+                        evidence="World Teachers' Day is celebrated annually on 5 October.")
+        self.fetch.side_effect = lambda url: SourceDocument(url, TABLE if url == GOV else row["evidence"])
+        report = self.discover(Mock(return_value=json.dumps({"events": [row]})))
+        merged = json.loads((self.output / "registry.json").read_text())
+        self.assertFalse(any(o["eventId"] == "vishwakarma-puja" for o in merged["occurrences"]))
+        self.assertTrue(any("identity" in w for w in report["warnings"]))
+
+    def test_alias_cannot_bypass_existing_approval_required_policy(self):
+        row = candidate(eventId="kshamavani", name="Kshamavani", sourceName="Kshamavani",
+                        date="2026-10-05", evidence="Kshamavani is on 5 October 2026.", annual=False)
+        self.fetch.side_effect = lambda url: SourceDocument(url, TABLE if url == GOV else row["evidence"])
+        self.discover(Mock(return_value=json.dumps({"events": [row]})))
+        registry = load_registry(self.output / "registry.json", asset_root=ROOT)
+        self.assertFalse(any(j.event.id in ("kshamavani", "paryushan-kshamavani")
+                             for j in plan_jobs(registry, as_of=date(2026, 10, 2), completed=[])))
+        merged = json.loads((self.output / "registry.json").read_text())
+        self.assertFalse(any(e["id"] == "kshamavani" for e in merged["events"]))
+
+    def test_saved_alias_cannot_bypass_current_owner_hold(self):
+        saved = copy.deepcopy(self.raw)
+        saved["calendarIdentityPolicy"] = 2
+        saved["events"].append({**saved["events"][0], "id": "kshamavani", "name": "Kshamavani", "sensitivity": "standard"})
+        saved["occurrences"].append({"eventId": "kshamavani", "date": "2026-10-05", "status": "locked", "verifiedAt": "2026-10-02", "sources": [GOV]})
+        (self.output / "registry.json").write_text(json.dumps(saved))
+        self.discover()
+        registry = load_registry(self.output / "registry.json", asset_root=ROOT)
+        self.assertFalse(any(j.event.id in ("kshamavani", "paryushan-kshamavani")
+                             for j in plan_jobs(registry, as_of=date(2026, 10, 2), completed=[])))
+
+    def test_unversioned_wrong_identity_occurrences_are_not_carried_forward(self):
+        saved = copy.deepcopy(self.raw)
+        saved["occurrences"].append({"eventId": "vishwakarma-puja", "date": "2026-10-05", "status": "locked", "verifiedAt": "2026-10-02", "sources": [UN]})
+        (self.output / "registry.json").write_text(json.dumps(saved))
+        self.discover()
+        merged = json.loads((self.output / "registry.json").read_text())
+        self.assertFalse(any(o["eventId"] == "vishwakarma-puja" for o in merged["occurrences"]))
+        self.assertEqual(merged["calendarIdentityPolicy"], 2)
+
     def test_api_attempt_is_persisted_before_call_and_failure_cannot_reburn_quota(self):
         def call(body):
             self.assertEqual(json.loads((self.output / "2026-10-02.json").read_text())["aiAttempts"], 1)

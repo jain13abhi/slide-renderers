@@ -205,7 +205,9 @@ def _calendar_health(args: argparse.Namespace) -> int:
             + "\n".join(warnings)[:2800])
         report["alerted"] = True
         discovery._write(path, report)
-    return 0
+    # This runs after verified production/delivery: expose incomplete coverage
+    # as a failed health gate without blocking the packages that are valid.
+    return 1 if warnings else 0
 
 
 def _migrate_paths(args: argparse.Namespace) -> int:

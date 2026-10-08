@@ -45,7 +45,7 @@ class TelegramTests(unittest.TestCase):
 
         def transport(method: str, fields: dict, file: Path | None):
             calls.append((method, fields, file))
-            return {"ok": True}
+            return {"ok": True, "result": {"message_id": len(calls)}}
 
         with tempfile.TemporaryDirectory() as folder:
             root = Path(folder)
@@ -100,7 +100,7 @@ class TelegramTests(unittest.TestCase):
 
         def transport(method: str, fields: dict, file: Path | None):
             calls.append((method, fields, file))
-            return {"ok": True}
+            return {"ok": True, "result": {"message_id": len(calls)}}
 
         with tempfile.TemporaryDirectory() as folder:
             package = package_fixture(Path(folder))
@@ -118,6 +118,22 @@ class TelegramTests(unittest.TestCase):
             package = package_fixture(Path(folder))
             with self.assertRaisesRegex(TelegramError, "chat not found"):
                 TelegramClient(token="token", chat_id="chat", transport=transport).deliver(package)
+
+    def test_partial_delivery_resumes_without_resending_confirmed_photo(self):
+        calls = []
+        def transport(method, fields, file):
+            calls.append(method)
+            if len(calls) == 2:
+                return {"ok": False, "description": "temporarily refused"}
+            return {"ok": True, "result": {"message_id": len(calls)}}
+        with tempfile.TemporaryDirectory() as folder:
+            package = package_fixture(Path(folder))
+            client = TelegramClient(token="token", chat_id="chat", transport=transport)
+            with self.assertRaises(TelegramError):
+                client.deliver(package)
+            client.deliver(package)
+        self.assertEqual(calls.count("sendPhoto"), 1)
+        self.assertEqual(calls.count("sendMessage"), 4)
 
 
 if __name__ == "__main__":
