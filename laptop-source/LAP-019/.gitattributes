@@ -1,0 +1,4 @@
+# The workflow runs bash heredocs; a CRLF terminator never matches.
+*.yml text eol=lf
+*.py  text eol=lf
+*.json text eol=lf
