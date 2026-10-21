@@ -4,6 +4,8 @@
 Repair occasion discovery/delivery and preserve original branding without redesigning the locked renderer.
 
 ## Current status
+Stage A approved on October21, with this laptop session designated sole operator. Read-only preflight: no VPS operator lock; approved renderer/Metal/Dock PR heads unchanged and CI successful; both exact-head Vercel previews report successful deployment. Direct preview page requests redirect to Vercel SSO; no existing automation-bypass token on either project. Awaiting owner's signed-in preview page/image acceptance before any rollout mutation. No operator lock acquired, backup tag, merge, dispatch, credential/protection change or VPS write performed. Handoff-only branch laptop/stage-a-preflight-20261021 preserves the exact approved PR22 head unchanged.
+
 Unmerged laptop/content-reliability-20261019 repair branch. October 8 renderer PR #21 is already merged; production orchestration still pins 10b5ca8. New repairs are not live.
 
 ## Done
@@ -22,7 +24,7 @@ Unmerged laptop/content-reliability-20261019 repair branch. October 8 renderer P
 4. Complete independently sourced global/China and other regional/tradition coverage; do not claim exhaustive identification.
 
 ## Blockers
-- No current production merge/dispatch/VPS-change approval; old October 8 exception is not blanket authority.
+- Stage A merge/operator approval is now granted, superseding the earlier approval blocker only for renderer22/Metal40/Dock53. Preview page/image acceptance remains pending; Stage B engine8 activation, historical corrections, dispatches and API/security changes are not approved.
 - Live provider health/new generation not verified. Existing production still reports429. Calendar adapters cannot infer disputed tithis from other businesses' posts.
 - Historical content corrections and late occasion recoveries require reviewed, date-accurate payloads; do not relabel current evidence as old.
 

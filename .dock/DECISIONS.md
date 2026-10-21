@@ -19,3 +19,9 @@
 - Boundary: Fresh exact-command rollout/operator approval is required before new production merges, dispatches, backfills or VPS changes. The October8 exception is not reused.
 - Evidence: Local tests/review do not prove live provider acceptance or complete global/China/regional calendar coverage. Keep degraded health visible; no paid switch or account rotation.
 - Decided by: Abhi's repair/resume request and Dock rules; recorded by Codex on BOOK-4AFVC139C5.
+
+## 2026-10-21 — Stage A operator approval and preview gate
+- Abhi explicitly approved Stage A and designated this laptop session sole VPS operator for this rollout. Exact target heads remain renderer22 e5b9ad1, Metal40 27cd14a and Dock53 81d6316; engine8 remains excluded.
+- Read-only Tailscale preflight found no operator lock; roles/runbook/changelog read. All approved heads are mergeable with passing Ubuntu/Windows CI. Website exact-head Vercel Preview deployments succeeded, but direct page/image acceptance is blocked by Vercel SSO.
+- No existing automation-bypass token on either project; do not invoke CLI token auto-creation, weaken deployment protection or call old production a preview. Ask owner to open signed-in previews and verify page/image rendering.
+- Pause before all rollout mutations until preview acceptance; no backups/merges/dispatches/VPS writes yet. Publish this handoff on its own laptop branch, never change the approved PR head for a status note.
