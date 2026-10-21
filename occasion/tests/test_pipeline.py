@@ -54,6 +54,13 @@ def valid_draft() -> dict:
 
 
 class DraftTests(unittest.TestCase):
+    def test_threads_and_business_copy_obey_their_own_limits(self):
+        for channel, maximum in [('threads', 500), ('google-business', 1500)]:
+            payload = valid_draft()
+            payload['captions'][channel] = 'x' * (maximum + 1)
+            with self.assertRaisesRegex(PipelineError, str(maximum)):
+                Draft.from_payload(payload, channels=(channel,))
+
     def test_draft_requires_copy_for_every_configured_channel(self) -> None:
         payload = valid_draft()
         payload["captions"].pop("x")

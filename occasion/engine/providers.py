@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import re
 import shutil
 import subprocess
 import time
@@ -35,7 +36,20 @@ def _gemini_http_error_detail(error: HTTPError) -> str:
             api_error = payload.get("error") if isinstance(payload, dict) else None
             message = api_error.get("message") if isinstance(api_error, dict) else None
             if isinstance(message, str) and message.strip():
-                return message.strip()[:800]
+                extra = []
+                for detail in api_error.get('details', []):
+                    if not isinstance(detail, dict):
+                        continue
+                    for item in detail.get('violations', []):
+                        if isinstance(item, dict):
+                            for key in ('quotaMetric', 'quotaId', 'quotaValue'):
+                                value = item.get(key)
+                                if isinstance(value, (str, int)) and re.fullmatch(r'[A-Za-z0-9_./-]{1,180}', str(value)):
+                                    extra.append(f'{key}={value}')
+                    delay = detail.get('retryDelay')
+                    if isinstance(delay, str) and re.fullmatch(r'[0-9.]+s', delay):
+                        extra.append(f'retryDelay={delay}')
+                return (message.strip()[:800] + '; ' + '; '.join(extra)).rstrip('; ')
         except json.JSONDecodeError:
             return raw.strip()[:800]
     return str(error.reason or error)
@@ -71,12 +85,14 @@ class GeminiDrafter:
         retry_attempts: int = 3,
         retry_base_seconds: float = 5,
         sleep: Sleeper = time.sleep,
+        grounded_research: bool = True,
     ) -> None:
         if retry_attempts < 1:
             raise ValueError("retry_attempts must be positive")
         if retry_base_seconds < 0:
             raise ValueError("retry_base_seconds cannot be negative")
         self.model = model
+        self.grounded_research = grounded_research
         self.timeout_seconds = timeout_seconds
         self.retry_attempts = retry_attempts
         self.retry_base_seconds = retry_base_seconds
@@ -113,8 +129,13 @@ class GeminiDrafter:
                         payload = json.loads(response.read().decode("utf-8"))
                     break
                 except HTTPError as exc:
+                    detail = _gemini_http_error_detail(exc).replace(api_key, '[redacted]')
+                    detail = re.sub(r'https?://\S+', '[provider URL redacted]', detail)
+                    daily_exhausted = exc.code == 429 and bool(re.search(
+                        r'per_?day|daily.*quota.*exhaust|quotaValue=0\b|limit:\s*0\b', detail, re.I))
                     if (
                         exc.code in _TRANSIENT_GEMINI_STATUS_CODES
+                        and not daily_exhausted
                         and attempt < self.retry_attempts
                     ):
                         retry_after = exc.headers.get("Retry-After") if exc.headers else None
@@ -126,7 +147,6 @@ class GeminiDrafter:
                             delay = self.retry_base_seconds * (2 ** (attempt - 1))
                         self._sleep(max(0, min(delay, 60)))
                         continue
-                    detail = _gemini_http_error_detail(exc)
                     raise PipelineError(
                         "Gemini request failed after "
                         f"{attempt} attempt(s): HTTP {exc.code}: {detail}"
@@ -173,8 +193,8 @@ concise research packet with source URLs. Do not draft marketing copy yet."""
         sources = "\n".join(f"- {url}" for url in job.occurrence.sources)
         return f"""LOCKED REGISTRY RESEARCH FALLBACK
 
-Google Search grounding was unavailable because its bounded quota was exhausted. Use only the
-following already-validated registry facts. Do not infer a different date, tradition, or event.
+Use only the following already-validated registry facts. No fresh search is claimed.
+Do not infer a different date, tradition, or event.
 
 Event: {job.event.name}
 Confirmed occurrence date: {job.publish_date.isoformat()}
@@ -201,6 +221,10 @@ BRAND: {job.brand.name}
 BRAND CHANNELS: {channels}
 BRAND-SPECIFIC ANGLE AND VISUAL DIRECTION: {job.event.image_direction}
 
+This package may be prepared 14 days ahead and may be recovered later. Use the
+explicit event date, never claim the occasion is today/tomorrow/yesterday. Keep
+greetings reusable on that date; do not invent quotes, current-year themes or offers.
+
 RESEARCH PACKET:
 {research}
 
@@ -212,6 +236,7 @@ Return exactly one JSON object with:
   letters, logos, watermark, UI, border, or invented sacred symbolism
 - captions: one caption for every requested channel, using the exact channel names
 
+Threads must be at most 500 characters; Google Business at most 1500. Include hashtags in these limits.
 The X caption must have no URL and must be at most 260 characters. Other captions must be at most
 2200 characters. Do not put hashtags into the image. The renderer, logo, typography, colours, and
 geometry are locked and are not part of this response.{correction_text}"""
@@ -222,12 +247,13 @@ geometry are locked and are not part of this response.{correction_text}"""
             "tools": [{"google_search": {}}],
             "generationConfig": {"temperature": 0.15},
         }
-        try:
-            research = self._transport(research_body)
-        except PipelineError as exc:
-            if not self._is_grounding_quota_error(exc):
-                raise
-            research = self._locked_research_packet(job)
+        research = self._locked_research_packet(job)
+        if self.grounded_research:
+            try:
+                research = self._transport(research_body)
+            except PipelineError as exc:
+                if not self._is_grounding_quota_error(exc):
+                    raise
         correction: str | None = None
         for _ in range(2):
             draft_body = {

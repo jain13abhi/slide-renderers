@@ -35,6 +35,16 @@ class ProviderTestCase(unittest.TestCase):
 
 
 class GeminiTests(ProviderTestCase):
+    def test_locked_mode_never_spends_a_google_search_research_call(self):
+        calls = []
+        def transport(body):
+            calls.append(body)
+            return json.dumps(valid_draft())
+        GeminiDrafter(transport=transport, grounded_research=False).draft(self.job)
+        self.assertEqual(len(calls), 1)
+        self.assertNotIn('tools', calls[0])
+        self.assertIn(self.job.occurrence.sources[0], calls[0]['contents'][0]['parts'][0]['text'])
+
     @staticmethod
     def _http_error(code: int, message: str, *, retry_after: str | None = None) -> HTTPError:
         headers = {"Retry-After": retry_after} if retry_after is not None else {}
@@ -84,8 +94,25 @@ class GeminiTests(ProviderTestCase):
             with self.assertRaisesRegex(PipelineError, "Free-tier daily quota exhausted"):
                 drafter._transport({"contents": []})
 
-        self.assertEqual(urlopen.call_count, 3)
-        self.assertEqual(delays, [0, 0])
+        self.assertEqual(urlopen.call_count, 1)
+        self.assertEqual(delays, [])
+
+    def test_quota_metric_is_reported_without_api_key_or_error_url(self):
+        payload = {'error': {'message': 'quota error test-key https://example.com/?key=test-key',
+                   'details': [{'violations': [{'quotaMetric': 'generate_requests_per_day',
+                                                'quotaId': 'RequestsPerDay', 'quotaValue': '0'}]},
+                               {'retryDelay': '24s'}]}}
+        error = HTTPError('https://api.example.com', 429, 'quota', {}, BytesIO(json.dumps(payload).encode()))
+        drafter = GeminiDrafter(api_key='test-key', sleep=lambda _: None)
+        with mock.patch('occasion.engine.providers.request.urlopen', side_effect=error) as call:
+            with self.assertRaises(PipelineError) as raised:
+                drafter._transport({})
+        detail = str(raised.exception)
+        self.assertIn('generate_requests_per_day', detail)
+        self.assertIn('retryDelay=24s', detail)
+        self.assertNotIn('test-key', detail)
+        self.assertNotIn('https://', detail)
+        self.assertEqual(call.call_count, 1)
 
     def test_http_transport_does_not_retry_non_transient_400(self) -> None:
         delays: list[float] = []

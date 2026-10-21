@@ -6,7 +6,7 @@ import argparse
 import json
 import os
 from contextlib import contextmanager
-from datetime import date
+from datetime import date, datetime, timedelta, timezone
 from pathlib import Path
 from typing import Iterator, Sequence
 
@@ -15,8 +15,9 @@ from .pipeline import PipelineError, run_job
 from .migrate_paths import migrate_paths
 from .providers import GeminiDrafter, HiggsfieldProvider
 from .state import load_state, mark_delivered, pending_delivery
-from .telegram import TelegramClient
+from .telegram import TelegramClient, ist_today
 from . import discovery
+from .official_calendar import CAG_CALENDAR
 
 
 @contextmanager
@@ -98,6 +99,7 @@ def _produce(args: argparse.Namespace) -> int:
         drafter = GeminiDrafter(
             api_key=os.environ.get("GEMINI_API_KEY"),
             model=os.environ.get("GEMINI_MODEL", "gemini-3.5-flash-lite"),
+            grounded_research=False,  # Dates/traditions already verified in the registry.
         )
         image_provider = HiggsfieldProvider(
             budget=GenerationBudget(max_attempts=registry.max_image_attempts),
@@ -167,6 +169,46 @@ def _notify_failure(args: argparse.Namespace) -> int:
     return 0
 
 
+def _remind(args: argparse.Namespace) -> int:
+    """Surface prepared assets on their event day, without regenerating anything."""
+    root = Path(args.repo_root).resolve()
+    today = date.fromisoformat(args.date)
+    if today != ist_today():
+        print('Historical/future planning date: no READY TO POST TODAY reminder sent.')
+        return 0
+    def resolved(value):
+        path = Path(value)
+        return path if path.is_absolute() else root / path
+    output = resolved(args.output_root)
+    snapshot = load_state(resolved(args.state_root), production_root=output, legacy_root=root)
+    registry = load_registry(resolved(args.registry), asset_root=root)
+    due = [j for j in plan_jobs(registry, as_of=today, completed=[])
+           if j.publish_date == today and j.key in snapshot.delivered]
+    telegram = None
+    errors = []
+    for job in due:
+        marker = json.loads(snapshot.markers[job.key].read_text(encoding='utf-8'))
+        delivered_at = marker.get('deliveredAt')
+        if delivered_at:
+            try:
+                delivered = datetime.fromisoformat(delivered_at)
+                if delivered.tzinfo is not None and delivered.astimezone(timezone(timedelta(hours=5, minutes=30))).date() == today:
+                    continue  # The full bundle already arrived today.
+            except ValueError:
+                raise PipelineError('invalid delivery timestamp; inspect state before reminding')
+        try:
+            telegram = telegram or _telegram_from_environment()
+            telegram.deliver(snapshot.packages[job.key], production_root=output, legacy_root=root,
+                             purpose='event-day', as_of=today)
+            print(f'Event-day package confirmed: {job.key}')
+        except Exception as exc:
+            errors.append(f'{job.key}: {exc}')
+    if errors:
+        raise PipelineError('; '.join(errors))
+    print('Event-day reminders checked; no generation calls made.')
+    return 0
+
+
 def _discover(args: argparse.Namespace) -> int:
     root = Path(args.repo_root).resolve()
     registry_path = Path(args.registry)
@@ -186,7 +228,8 @@ def _discover(args: argparse.Namespace) -> int:
     report = discovery.discover_calendar(
         base=json.loads(registry_path.read_text(encoding="utf-8")),
         as_of=date.fromisoformat(args.date), calendar_root=calendar_root,
-        fetch=discovery.fetch_official, transport=transport)
+        fetch=discovery.fetch_official, transport=transport,
+        supplemental_sources=(CAG_CALENDAR,))
     load_registry(calendar_root / "registry.json", asset_root=root)
     print(f"Calendar discovery: {report['status']}; {len(report['accepted'])} verified occurrence(s).")
     for warning in report["warnings"]:
@@ -200,13 +243,17 @@ def _calendar_health(args: argparse.Namespace) -> int:
     warnings = report.get("warnings", [])
     if warnings and not report.get("alerted"):
         _telegram_from_environment().send_message(
-            "OCCASION CALENDAR INCOMPLETE\n\nDate: " + report["date"]
+            "OCCASION CALENDAR DEGRADED\n\nDate: " + report["date"]
+            + "\nOfficial calendar: " + report.get('coreStatus', 'unknown')
+            + "; AI extension: " + report.get('extensionStatus', 'unknown')
             + "\nVerified packages can continue; discovery is not fully healthy.\n\n"
             + "\n".join(warnings)[:2800])
         report["alerted"] = True
         discovery._write(path, report)
     # This runs after verified production/delivery: expose incomplete coverage
     # as a failed health gate without blocking the packages that are valid.
+    # Keep incomplete regional/global discovery visible; never turn an empty
+    # partial calendar green merely because the official holiday subset worked.
     return 1 if warnings else 0
 
 
@@ -265,6 +312,14 @@ def _parser() -> argparse.ArgumentParser:
     deliver.add_argument("--state-root", default="occasion/state")
     deliver.add_argument("--output-root", default="occasion/production")
     deliver.set_defaults(handler=_deliver)
+
+    remind = subparsers.add_parser('remind', help='resurface existing delivered packages on their event date')
+    remind.add_argument('--date', required=True)
+    remind.add_argument('--repo-root', default=default_repo)
+    remind.add_argument('--registry', default='occasion/registry.json')
+    remind.add_argument('--state-root', default='occasion/state')
+    remind.add_argument('--output-root', default='occasion/production')
+    remind.set_defaults(handler=_remind)
 
     migrate = subparsers.add_parser(
         "migrate-paths", help="preview or write portable occasion state paths"
