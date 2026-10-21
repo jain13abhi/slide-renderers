@@ -1,4 +1,9 @@
 # DECISIONS
+## 2026-10-21 — Approved Stage A execution outcome
+- Abhi accepted both protected previews and designated this laptop sole operator. Exact approved merges performed only after backup tags; Renderer22 merged189141a; e5b9ad1 ancestor verified. Engine8 remains excluded.
+- All three main Ubuntu/Windows CI matrices pass; existing daily pages/3PNG images healthy. New Vercel merge deployments are not recorded; no claim new hosting revision is active. Daily serving files unchanged. No unapproved manual deploy/dispatch/provider call; historical corrections and engine8 activation excluded.
+- VPS changes limited to owned atomic operator lock and immediate changelog entries; owned lock released. Status-only branch publication preserves original code heads. Next normal clock run and any separately approved hosting/Stage B work remain pending.
+
 <!-- Append-only; supersede entries rather than altering their history. -->
 ## 2026-10-08 — Status audit boundary
 - Context: Abhi requested status since the previous check through today.
