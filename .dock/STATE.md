@@ -1,27 +1,33 @@
 # STATE
+
 ## Goal
-Review engine behavior and support reliable daily/occasion pipelines.
+Repair occasion discovery/delivery and preserve original branding without redesigning the locked renderer.
+
 ## Current status
-Reviewed fixes pushed in PR #21; Ubuntu/Windows CI passes at code SHA 10b5ca8. Production remains on 8dea102 until approved rollout.
+Unmerged laptop/content-reliability-20261019 repair branch. October 8 renderer PR #21 is already merged; production orchestration still pins 10b5ca8. New repairs are not live.
+
 ## Done
-- Read-only GitHub/main-tree/log audit for October 2–8, 2026; no production changes.
-- Detailed shared evidence: ../deliverables/status-2026-10-08.md (relative to this repository root).
-- Canonical event/source identity and approval-policy preservation; safe rebuild of legacy discovery rows; per-message Telegram receipts; nonzero degraded-calendar health. 80 Python tests pass.
-- Code Reviewer, Reality Checker and AI-Generated Code Security Auditor gates used. Local review passed; real production verification remains pending.
-- Rollout handoff: ../deliverables/reliability-rollout-2026-10-08.md.
-- Both website Next builds exited 0; all 199 regression tests plus five workflow checks pass locally. This final handoff changes only state documentation, not tested runtime code.
+- Audited October 8-19; read-only refresh on October 21 confirms recurring occasion calendar HTTP429 and successful daily publication/delivery workflows on October 19-21.
+- Added official Delhi holiday HTML adapter with table-year/weekday validation and preserved full event names, owner policy and sensitive-observance gates.
+- Removed Google Search from the bounded calendar packet extraction; production drafting can use locked facts without another grounding request. Retained explicit degraded-health failure and truthful limited coverage.
+- Added actual-IST event-day reminders with independent resumable receipts, no generation, historical-date guard, owner holds and same-day-delivery suppression.
+- Added quota diagnostic redaction/daily exhaustion short circuit and Threads/GBP limits.
+- Original Metal Dock, Dockfinity and Paatra Drive logos stored with SHA-256 provenance. Standalone original-pixel compositor tested; three corrected creatives saved in the task deliverables, not committed as large media.
+- 93 Python tests pass with pinned Pillow12.3.0/pypdf6.19.0; Code Reviewer, Reality Checker and AI-code Security Auditor gates used. Production renderer unchanged.
+
 ## Next steps
-1. Await approved renderer merge preserving code SHA 10b5ca8d3f3f8224aa8a002c8d1c7a314d162c95, then orchestration merge.
-2. Preserve locked structure/visuals; distinguish publication, delivery, and coverage outcomes.
+1. Push reviewed branch/PR; after approved real merge verify the pinned code commit is reachable from main.
+2. Private dock-content-engine PR must pin that same commit in both runner workflows and wire reminders.
+3. Obtain fresh exact-command production rollout approval; controlled no-generation checks before any approved real generation/delivery.
+4. Complete independently sourced global/China and other regional/tradition coverage; do not claim exhaustive identification.
+
 ## Blockers
-- No fresh exact-command production plan approval yet. No merge, dispatch or VPS change performed.
-- Provider/source availability is not guaranteed; confirmed receipts are resumable, not an exactly-once guarantee after ambiguous acceptance.
+- No current production merge/dispatch/VPS-change approval; old October 8 exception is not blanket authority.
+- Live provider health/new generation not verified. Existing production still reports429. Calendar adapters cannot infer disputed tithis from other businesses' posts.
+- Historical content corrections and late occasion recoveries require reviewed, date-accurate payloads; do not relabel current evidence as old.
+
 ## Open questions
-- Abhi must approve the operator rollout/backfill plan. BOOK-4AFVC139C5 is not assumed to be the designated always-on desktop.
-## Parked (ship-gate)
-- Automatic social-platform posting remains deferred.
+- Owner/operator approval and controlled generation budget for production verification.
+
 ## Last updated
-- Tool: Codex desktop
-- Account: Codex (seat unspecified)
-- Device: BOOK-4AFVC139C5
-- Date: 2026-10-08, implementation and local verification
+Codex / seat unspecified / BOOK-4AFVC139C5 laptop / 2026-10-21 Asia/Calcutta.

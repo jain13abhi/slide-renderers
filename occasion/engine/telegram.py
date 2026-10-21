@@ -6,6 +6,7 @@ import json
 import hashlib
 import mimetypes
 import uuid
+from datetime import date, datetime, timezone, timedelta
 from pathlib import Path
 from typing import Any, Callable, Mapping
 from urllib import parse, request
@@ -18,6 +19,10 @@ class TelegramError(RuntimeError):
 
 
 Transport = Callable[[str, dict[str, str], Path | None], Mapping[str, Any]]
+
+
+def ist_today() -> date:
+    return datetime.now(timezone(timedelta(hours=5, minutes=30))).date()
 
 
 def _chunks(value: str, size: int = 3900) -> list[str]:
@@ -81,12 +86,14 @@ class TelegramClient:
         chat_id: str,
         transport: Transport | None = None,
         timeout_seconds: int = 120,
+        today: Callable[[], date] = ist_today,
     ) -> None:
         if not token or not chat_id:
             raise TelegramError("Telegram token and chat id are required")
         self.chat_id = chat_id
         self.destination_context = token.split(":", 1)[0] + "|" + chat_id
         self.timeout_seconds = timeout_seconds
+        self.today = today
         self.transport = transport or self._http_transport(token)
 
     def _http_transport(self, token: str) -> Transport:
@@ -141,6 +148,8 @@ class TelegramClient:
         *,
         production_root: str | Path | None = None,
         legacy_root: str | Path | None = None,
+        purpose: str = 'preparation',
+        as_of: date | None = None,
     ) -> None:
         package_path = Path(package_path)
         try:
@@ -152,6 +161,10 @@ class TelegramClient:
         artifacts = package.get("artifacts")
         if not all(isinstance(item, Mapping) for item in (event, brand, artifacts)):
             raise TelegramError("delivery package metadata is incomplete")
+        if purpose not in ('preparation', 'event-day'):
+            raise TelegramError('unsupported delivery purpose')
+        if purpose == 'event-day' and (as_of is None or as_of != self.today() or event.get('date') != as_of.isoformat()):
+            raise TelegramError('event-day reminder must match the actual event date')
         card_value = artifacts.get("card")
         schema_version = package.get("schemaVersion", 1)
         card = None
@@ -168,7 +181,9 @@ class TelegramClient:
         if card is None or not card.is_file():
             raise TelegramError("delivery card is missing")
         caption = f"{brand.get('name')} · {event.get('name')} · {event.get('date')}"
-        receipt_path = package_path.with_suffix(".telegram.json")
+        if purpose == 'event-day':
+            caption = 'READY TO POST TODAY\n' + caption
+        receipt_path = package_path.with_suffix('.event-day.telegram.json' if purpose == 'event-day' else '.telegram.json')
         context = hashlib.sha256((self.destination_context + json.dumps(package, sort_keys=True)).encode() + card.read_bytes()).hexdigest()
         receipt = json.loads(receipt_path.read_text()) if receipt_path.exists() else {}
         if receipt.get("contextHash") != context:

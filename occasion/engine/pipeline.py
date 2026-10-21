@@ -57,8 +57,9 @@ class Draft:
             if not isinstance(value, str) or not value.strip():
                 raise PipelineError(f"draft.captions.{channel} is required")
             value = value.strip()
-            if len(value) > 2200:
-                raise PipelineError(f"draft.captions.{channel} exceeds 2200 characters")
+            maximum = {'threads': 500, 'google-business': 1500, 'x': 260}.get(channel, 2200)
+            if len(value) > maximum:
+                raise PipelineError(f"draft.captions.{channel} exceeds {maximum} characters")
             captions[channel] = value
         x_caption = captions.get("x")
         if x_caption and re.search(r"(?:https?://|www\.)", x_caption, flags=re.IGNORECASE):

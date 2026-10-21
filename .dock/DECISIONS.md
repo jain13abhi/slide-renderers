@@ -12,3 +12,10 @@
 - Production: Standing operator rules require a fresh exact-command plan approval before production merges, dispatches, backfills or VPS writes. The previous audit entry remains historical.
 - Delivery: Persist confirmed per-message receipts; do not claim exactly-once delivery after ambiguous provider acceptance. Distinguish publication, delivery and calendar coverage.
 - Decided by: Abhi's repair request and global Dock rules; recorded by Codex on BOOK-4AFVC139C5.
+
+## 2026-10-21 — Reviewed repair, not a production rollout
+- Context: Abhi requested fixes for daily/occasion failures and the existing original brand logos; resumed after October19.
+- Decision: Implement regression-tested minimal changes on laptop/content-reliability-20261019 and push reviewed PRs; preserve main, locked visuals, accepted Telegram receipts and owner approval holds.
+- Boundary: Fresh exact-command rollout/operator approval is required before new production merges, dispatches, backfills or VPS changes. The October8 exception is not reused.
+- Evidence: Local tests/review do not prove live provider acceptance or complete global/China/regional calendar coverage. Keep degraded health visible; no paid switch or account rotation.
+- Decided by: Abhi's repair/resume request and Dock rules; recorded by Codex on BOOK-4AFVC139C5.

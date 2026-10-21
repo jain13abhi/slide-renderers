@@ -196,3 +196,39 @@ Calendar warnings return a nonzero health result after verified packages have
 been produced/delivered; incomplete coverage cannot appear as a clean zero-job
 success. Source availability and complete worldwide coverage are not guaranteed.
 
+### Reliability repair branch, 21 October 2026 (not deployed)
+
+The October 8 rollout merged PR #21 and production currently pins code `10b5ca8`.
+The new repair must be reviewed/merged and pinned by both orchestration workflows
+before any behavior below is live.
+
+- Official CAG Delhi holiday HTML rows supplement the gazetted PDF without an
+  LLM call. Table year, weekday and full event wording are checked. These are
+  government office observances, not a universal regional/religious tithi rule.
+- The AI extraction pass gets the fetched official packet and no Google Search
+  tool. One request per planning date remains the cap. This **narrows** automated
+  discovery to the fetched sources; wider global/China/tradition adapters are
+  still incomplete, not silently treated as covered.
+- Production drafting uses already-verified locked registry facts by default,
+  without another paid/grounded research request; at most two drafting responses.
+  Missing facts are omitted, not reconstructed from model memory.
+- Known daily/zero quota errors stop transport retries. Safe quota metric/ID and
+  retry-delay diagnostics are retained when Google supplies them; no key/URL is
+  exposed. Transient errors still have bounded retries. A 429 cannot establish
+  that billing or account rotation is required.
+- `python -m occasion.engine remind --date YYYY-MM-DD` resurfaces existing
+  delivered packages on the **actual current IST event day**, with separate
+  resumable photo/caption receipts. Historical/future dates are a no-op, current
+  approval holds/cancellations/disabled brands win, and a bundle delivered today
+  is not sent again. No drafting, image generation or original receipt reset.
+- Threads and GBP caption limits are enforced before generation. Copy prompts
+  avoid relative occasion dates so advance-prepared captions remain reusable.
+- The locked production renderer is unchanged. `occasion.brand_post` is a
+  separate manual creative recovery utility using fingerprint-checked original
+  logos; it does not regenerate logos or replace the production template.
+
+Any warning still returns a failed calendar-health gate **after** verified
+packages are processed. A working Indian holiday subset is not proof of complete
+regional/global coverage. Model availability, real generation/delivery and
+normal-clock behavior need controlled production verification after approval.
+
