@@ -1,5 +1,10 @@
 # DECISIONS
 <!-- Append-only; supersede entries rather than altering their history. -->
+## 2026-10-26 — Gate text and cultural scenes before provider spend
+- Use identical fixed typography preflight in drafting and production; no shrinking/truncation or extra drafting budget.
+- Bind image provider input to canonical checked-in cultural scenes. AI imagePrompt remains archived but cannot override the scene. Holds and traditions remain restrictive.
+- Input validation is not generated-pixel approval. Preserve/quarantine old pending generic packages during separately approved recovery; no blind resend.
+- Branch tests/PR authorized by Abhi's repair request. Production requires a new exact plan under the operator runbook. No generation was authorized or consumed.
 ## 2026-10-08 — Status audit boundary
 - Context: Abhi requested status since the previous check through today.
 - Decision: Inspect production read-only; do not merge, push, dispatch, backfill, generate, or change VPS state. Save and commit local handoff notes under the standing session-state rule.

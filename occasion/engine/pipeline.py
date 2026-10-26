@@ -11,7 +11,8 @@ from typing import Any, Mapping, Protocol
 
 from . import Job
 from .portable_paths import CURRENT_PATH_SCHEMA, portable_relative
-from .renderer import RenderError, render_card
+from .renderer import RenderError, render_card, validate_copy_layout
+from .visual_context import VisualContextError, trusted_visual_context
 
 
 class PipelineError(RuntimeError):
@@ -122,10 +123,12 @@ def run_job(
     marker = state_root / f"{file_key}.json"
 
     try:
+        visual_context = trusted_visual_context(job)
         draft = drafter.draft(job)
+        validate_copy_layout(eyebrow=draft.eyebrow, greeting=draft.greeting, tagline=draft.tagline)
         background.parent.mkdir(parents=True, exist_ok=True)
         generated = image_provider.generate(
-            prompt=f"{job.event.image_direction}\n\n{draft.image_prompt}",
+            prompt=visual_context['providerPrompt'],
             destination=background,
             job_key=job.key,
         )
@@ -143,6 +146,8 @@ def run_job(
         )
     except PipelineError:
         raise
+    except VisualContextError as exc:
+        raise PipelineError(str(exc)) from exc
     except RenderError as exc:
         raise PipelineError(f"locked renderer rejected the draft: {exc}") from exc
     except Exception as exc:
@@ -162,6 +167,7 @@ def run_job(
         "brand": {"id": job.brand.id, "name": job.brand.name},
         "sources": list(job.occurrence.sources),
         "draft": draft.as_dict(),
+        "visualContext": visual_context,
         "artifacts": {
             "background": portable_relative(background, root=output_root),
             "card": portable_relative(card, root=output_root),
