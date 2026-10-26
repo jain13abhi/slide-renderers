@@ -35,6 +35,39 @@ class ProviderTestCase(unittest.TestCase):
 
 
 class GeminiTests(ProviderTestCase):
+    def test_direct_drafter_rejects_untrusted_identity_before_transport(self):
+        from dataclasses import replace
+        for event in [replace(self.job.event, id='unknown-festival'),
+                      replace(self.job.event, tradition='A different regional tradition')]:
+            transport = mock.Mock()
+            with self.subTest(event=event), self.assertRaisesRegex(PipelineError, 'trusted visual brief'):
+                GeminiDrafter(transport=transport).draft(replace(self.job, event=event))
+            transport.assert_not_called()
+
+    def test_layout_failure_uses_existing_second_draft_only(self):
+        bad = valid_draft()
+        bad['greeting'] = 'Wonderful beginnings ' * 7
+        replies = iter([json.dumps(bad), json.dumps(valid_draft())])
+        calls = []
+        def transport(body):
+            calls.append(body)
+            return next(replies)
+        result = GeminiDrafter(transport=transport, grounded_research=False).draft(self.job)
+        self.assertEqual(result.greeting, valid_draft()['greeting'])
+        self.assertEqual(len(calls), 2)
+        self.assertIn('greeting', calls[1]['contents'][0]['parts'][0]['text'])
+
+    def test_two_layout_failures_do_not_create_a_third_attempt(self):
+        bad = valid_draft()
+        bad['greeting'] = 'Wonderful beginnings ' * 7
+        calls = []
+        def transport(body):
+            calls.append(body)
+            return json.dumps(bad)
+        with self.assertRaisesRegex(PipelineError, 'two drafting attempts'):
+            GeminiDrafter(transport=transport, grounded_research=False).draft(self.job)
+        self.assertEqual(len(calls), 2)
+
     def test_locked_mode_never_spends_a_google_search_research_call(self):
         calls = []
         def transport(body):

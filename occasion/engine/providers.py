@@ -16,6 +16,8 @@ from PIL import Image
 
 from . import GenerationBudget, Job, build_higgsfield_command, parse_higgsfield_result
 from .pipeline import Draft, PipelineError
+from .renderer import RenderError, validate_copy_layout
+from .visual_context import VisualContextError, trusted_visual_context
 
 GeminiTransport = Callable[[dict[str, Any]], str]
 CommandRunner = Callable[[list[str]], Any]
@@ -230,8 +232,8 @@ RESEARCH PACKET:
 
 Return exactly one JSON object with:
 - eyebrow: date/occasion label, maximum 56 characters
-- greeting: image headline, maximum 150 characters and no generic sales claim
-- tagline: restrained closing line, maximum 90 characters
+- greeting: short image headline, maximum 150 characters, fitting at most 3 lines at the locked 54px font; aim for 8-12 short words
+- tagline: restrained closing line, maximum 90 characters, fitting at most 2 lines at 27px
 - imagePrompt: a photorealistic, culturally accurate background prompt; it must request no text,
   letters, logos, watermark, UI, border, or invented sacred symbolism
 - captions: one caption for every requested channel, using the exact channel names
@@ -242,6 +244,10 @@ The X caption must have no URL and must be at most 260 characters. Other caption
 geometry are locked and are not part of this response.{correction_text}"""
 
     def draft(self, job: Job) -> Draft:
+        try:
+            trusted_visual_context(job)
+        except VisualContextError as exc:
+            raise PipelineError(str(exc)) from exc
         research_body = {
             "contents": [{"role": "user", "parts": [{"text": self._research_prompt(job)}]}],
             "tools": [{"google_search": {}}],
@@ -271,8 +277,10 @@ geometry are locked and are not part of this response.{correction_text}"""
             raw = self._transport(draft_body)
             try:
                 parsed = json.loads(raw)
-                return Draft.from_payload(parsed, channels=job.brand.channels)
-            except (json.JSONDecodeError, PipelineError) as exc:
+                draft = Draft.from_payload(parsed, channels=job.brand.channels)
+                validate_copy_layout(eyebrow=draft.eyebrow, greeting=draft.greeting, tagline=draft.tagline)
+                return draft
+            except (json.JSONDecodeError, PipelineError, RenderError) as exc:
                 correction = str(exc)
         raise PipelineError("Gemini failed local validation after two drafting attempts")
 

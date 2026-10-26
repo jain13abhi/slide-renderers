@@ -86,6 +86,13 @@ class RendererTests(unittest.TestCase):
 
         self.assertEqual(self.background.read_bytes(), before)
 
+    def test_preflight_rejects_long_words_and_uppercase_eyebrows(self):
+        for field, value in [('greeting', 'W' * 80), ('eyebrow', 'w' * 56)]:
+            copy = dict(eyebrow='FESTIVAL', greeting='Warm wishes.', tagline='With care.')
+            copy[field] = value
+            with self.subTest(field=field), self.assertRaisesRegex(RenderError, field):
+                renderer_module.validate_copy_layout(**copy)
+
 
 if __name__ == "__main__":
     unittest.main()

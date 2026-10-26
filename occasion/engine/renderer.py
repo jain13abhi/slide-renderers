@@ -111,6 +111,35 @@ def _logo_panel(canvas: Image.Image, logo_path: Path) -> None:
     canvas.alpha_composite(rounded, (SIDE, 64))
 
 
+def validate_copy_layout(*, eyebrow: str, greeting: str, tagline: str) -> dict[str, Any]:
+    """Measure the exact locked typography without opening/generating an image."""
+    eyebrow, greeting, tagline = map(_display_safe_text, (eyebrow, greeting, tagline))
+    for field, value, maximum in [('eyebrow', eyebrow, 56), ('greeting', greeting, 150), ('tagline', tagline, 90)]:
+        if not value or len(value) > maximum:
+            raise RenderError(f'{field} must contain 1-{maximum} characters')
+    draw = ImageDraw.Draw(Image.new('RGB', (1, 1)))
+    fonts = (_font(22, bold=True), _font(54, bold=True), _font(27))
+    width = WIDTH - 2 * SIDE
+    greeting_lines = _wrap(draw, greeting, fonts[1], width)
+    tagline_lines = _wrap(draw, tagline, fonts[2], width)
+    if len(greeting_lines) > 3:
+        raise RenderError('greeting wraps beyond three lines in the locked template')
+    if len(tagline_lines) > 2:
+        raise RenderError('tagline wraps beyond two lines in the locked template')
+    for field, lines, font in [('eyebrow', [eyebrow.upper()], fonts[0]),
+                               ('greeting', greeting_lines, fonts[1]),
+                               ('tagline', tagline_lines, fonts[2])]:
+        for line in lines:
+            box = draw.textbbox((0, 0), line, font=font)
+            if box[2] - box[0] > width:
+                raise RenderError(f'{field} exceeds the locked text width')
+    y = HEIGHT - BOTTOM - (29 + 28 + len(greeting_lines) * 66 + 26 + len(tagline_lines) * 37)
+    if y < OVERLAY_START + 90:
+        raise RenderError('copy exceeds the locked image-led text region')
+    return dict(eyebrow=eyebrow, greeting_lines=greeting_lines, tagline_lines=tagline_lines,
+                fonts=fonts, y=y)
+
+
 def render_card(
     *,
     background: str | Path,
@@ -122,15 +151,7 @@ def render_card(
 ) -> dict[str, Any]:
     """Render one 1080x1350 post without mutating the generated background."""
 
-    eyebrow = _display_safe_text(eyebrow)
-    greeting = _display_safe_text(greeting)
-    tagline = _display_safe_text(tagline)
-    if not eyebrow or len(eyebrow) > 56:
-        raise RenderError("eyebrow must contain 1-56 characters")
-    if not greeting or len(greeting) > 150:
-        raise RenderError("greeting must contain 1-150 characters")
-    if not tagline or len(tagline) > 90:
-        raise RenderError("tagline must contain 1-90 characters")
+    layout = validate_copy_layout(eyebrow=eyebrow, greeting=greeting, tagline=tagline)
 
     background_path = Path(background)
     try:
@@ -153,26 +174,13 @@ def render_card(
     draw = ImageDraw.Draw(canvas)
     accent = _colour(brand.renderer_profile.accent)
     text_colour = _colour(brand.renderer_profile.text)
-    eyebrow_font = _font(22, bold=True)
-    greeting_font = _font(54, bold=True)
-    tagline_font = _font(27)
-    max_text_width = WIDTH - 2 * SIDE
-
-    greeting_lines = _wrap(draw, greeting, greeting_font, max_text_width)
-    if len(greeting_lines) > 3:
-        raise RenderError("greeting wraps beyond three lines in the locked template")
-    tagline_lines = _wrap(draw, tagline, tagline_font, max_text_width)
-    if len(tagline_lines) > 2:
-        raise RenderError("tagline wraps beyond two lines in the locked template")
-
+    eyebrow_font, greeting_font, tagline_font = layout['fonts']
+    greeting_lines, tagline_lines = layout['greeting_lines'], layout['tagline_lines']
     greeting_line_height = 66
     tagline_line_height = 37
-    block_height = 29 + 28 + len(greeting_lines) * greeting_line_height + 26 + len(tagline_lines) * tagline_line_height
-    y = HEIGHT - BOTTOM - block_height
-    if y < OVERLAY_START + 90:
-        raise RenderError("copy exceeds the locked image-led text region")
+    y = layout['y']
 
-    draw.text((SIDE, y), eyebrow.upper(), font=eyebrow_font, fill=accent)
+    draw.text((SIDE, y), layout['eyebrow'].upper(), font=eyebrow_font, fill=accent)
     y += 57
     for line in greeting_lines:
         draw.text((SIDE, y), line, font=greeting_font, fill=text_colour)
@@ -195,4 +203,4 @@ def render_card(
     }
 
 
-__all__ = ["RenderError", "render_card"]
+__all__ = ["RenderError", "render_card", "validate_copy_layout"]
