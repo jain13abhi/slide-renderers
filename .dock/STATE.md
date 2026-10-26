@@ -4,6 +4,8 @@
 Repair occasion pre-spend validation and cultural scene binding while preserving original logos and locked visuals.
 
 ## Current status
+PR23 OPEN/mergeable at58566cfeaace202cd86daf7fa5c47674de735687; Ubuntu/Windows CI passed104tests. EnginePR11 pins it. Source candidates remain unchanged; no production merge or provider call. PhaseA plan prepared; ownerapproval pending.
+Handoff branch laptop/occasion-gates-handoff-20261026; reviewed PR head remains unchanged.
 laptop/occasion-pre-spend-gates-20261026; branch implementation, not deployed. Orchestrator main still pins e5b9ad1. Occasion production remains contained/disabled pending reviewed rollout.
 
 ## Done
